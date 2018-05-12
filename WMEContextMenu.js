@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            WME Context Menu
 // @namespace       https://greasyfork.org/users/30701-justins83-waze
-// @version         0.3.6
+// @version         0.3.7
 // @description     A right-click popup menu for editing segments. Currently integrates with WME Speedhelper and Road Selector to help make it even easier and faster to edit the map.
 // @author          TheLastTaterTot
 // @include         https://beta.waze.com/*editor*
@@ -226,7 +226,7 @@ var pasteTo = function (e, opt, val) {
     try { // (temporary) really dumb way via DOM nodes:
         switch (opt) {
             case 'cm_primaryStreet':
-                $('.address-edit-icon').click();
+                $('.full-address').click();
                 $('#emptyStreet').prop('checked',false).change();
                 $('.form-control.streetName').val(val).change();
                 if (!$('.form-control[name=cityName]').val().length) $('#emptyCity').prop('checked',true).change();
@@ -235,7 +235,7 @@ var pasteTo = function (e, opt, val) {
                 $('.action-buttons>.save-button').click();
                 break;
             case 'cm_primaryCity':
-                $('.address-edit-icon').click();
+                $('.full-address').click();
                 $('#emptyCity').prop('checked',false).change();
                 $('.form-control[name=cityName]').val(val).change();
                 if (!$('.form-control.streetName').val().length) $('#emptyStreet').prop('checked',true).change();
@@ -279,10 +279,10 @@ var addStreetAndCityToRSel = function (segIds, caseSelection) {
                     document.getElementById('selRSAltCity').value = 0;
 
                     document.getElementById('btnRSLBkt').click();
-                    document.getElementById('inRSStreet').value = Waze.model.streets.objects[segIds.primaryStreet[s]].name;
+                    document.getElementById('inRSStreet').value = W.model.streets.objects[segIds.primaryStreet[s]].name;
                     document.getElementById('btnRSAddStreet').click();
                     //document.getElementById('btnRSAnd').click();
-                    document.getElementById('inRSCity').value = Waze.model.cities.objects[Waze.model.streets.objects[segIds.primaryStreet[s]].cityID].name;
+                    document.getElementById('inRSCity').value = W.model.cities.objects[W.model.streets.objects[segIds.primaryStreet[s]].cityID].name;
                     document.getElementById('btnRSAddCity').click();
                     document.getElementById('btnRSRBkt').click();
                 }
@@ -306,10 +306,10 @@ var addStreetAndCityToRSel = function (segIds, caseSelection) {
                     document.getElementById('selRSAltCity').value = 1;
 
                     document.getElementById('btnRSLBkt').click();
-                    document.getElementById('inRSStreet').value = Waze.model.streets.objects[segIds.altStreets[s]].name;
+                    document.getElementById('inRSStreet').value = W.model.streets.objects[segIds.altStreets[s]].name;
                     document.getElementById('btnRSAddStreet').click();
                     //document.getElementById('btnRSAnd').click();
-                    document.getElementById('inRSCity').value = Waze.model.cities.objects[Waze.model.streets.objects[segIds.altStreets[s]].cityID].name;
+                    document.getElementById('inRSCity').value = W.model.cities.objects[W.model.streets.objects[segIds.altStreets[s]].cityID].name;
                     document.getElementById('btnRSAddCity').click();
                     document.getElementById('btnRSRBkt').click();
                 }
@@ -603,12 +603,12 @@ var getSegmentProperties = function (selectedStuff) {
                 s_ids.ids[segments[s].model.attributes.id] = null;
             if (segments[s].model.attributes.primaryStreetID) {
                 s_ids.primaryStreet[segments[s].model.attributes.primaryStreetID] = null;
-                if (Waze.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID) {
-                    s_ids.primaryCity[Waze.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID] = null;
-                    if (Waze.model.cities.objects[Waze.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].stateID)
-                        s_ids.state[Waze.model.cities.objects[Waze.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].stateID] = null;
+                if (W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID) {
+                    s_ids.primaryCity[W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID] = null;
+                    if (W.model.cities.objects[W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].stateID)
+                        s_ids.state[W.model.cities.objects[W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].stateID] = null;
 
-                    s_ids.country[Waze.model.cities.objects[Waze.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].countryID] = null;
+                    s_ids.country[W.model.cities.objects[W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].countryID] = null;
                 }
             }
             s_ids.roadType[segments[s].model.attributes.roadType] = null;
@@ -622,10 +622,10 @@ var getSegmentProperties = function (selectedStuff) {
             for (a = 0;  a < numAlts; a++) {
                 try {
                     s_ids.altStreets[s_altSt[a]] = null;
-                    s_ids.altCities[Waze.model.streets.objects[s_altSt[a]].cityID] = null;
+                    s_ids.altCities[W.model.streets.objects[s_altSt[a]].cityID] = null;
                 } catch(err) {}
             }
-debugger;
+
             s_toConnObjKeys = Object.keys(segments[s].model.attributes.toCrossroads);
             numKeys = s_toConnObjKeys.length;
             for (k = 0; k < numKeys; k++) {
@@ -661,28 +661,28 @@ debugger;
                     if (seg_ids[idKey][k] !== '') {
                         switch (idKey) {
                             case 'primaryStreet':
-                                seg_names[idKey][k] = Waze.model.streets.objects[seg_ids[idKey][k]].name;
+                                seg_names[idKey][k] = W.model.streets.objects[seg_ids[idKey][k]].name;
                                 break;
                             case 'primaryCity':
-                                seg_names[idKey][k] = Waze.model.cities.objects[seg_ids[idKey][k]].name;
+                                seg_names[idKey][k] = W.model.cities.objects[seg_ids[idKey][k]].name;
                                 break;
                             case 'altStreets':
-                                seg_names[idKey][k] = Waze.model.streets.objects[seg_ids[idKey][k]].name;
+                                seg_names[idKey][k] = W.model.streets.objects[seg_ids[idKey][k]].name;
                                 break;
                             case 'altCities':
-                                seg_names[idKey][k] = Waze.model.cities.objects[seg_ids[idKey][k]].name;
+                                seg_names[idKey][k] = W.model.cities.objects[seg_ids[idKey][k]].name;
                                 break;
                             case 'state':
-                                seg_names[idKey][k] = Waze.model.states.objects[seg_ids[idKey][k]].name;
+                                seg_names[idKey][k] = W.model.states.objects[seg_ids[idKey][k]].name;
                                 break;
                             case 'roadType':
                                 seg_names[idKey][k] = roadTypes[String(seg_ids[idKey][k])];
                                 break;
                             case 'createdBy':
-                                seg_names[idKey][k] = Waze.model.users.objects[seg_ids[idKey][k]].userName;
+                                seg_names[idKey][k] = W.model.users.objects[seg_ids[idKey][k]].userName;
                                 break;
                             case 'updatedBy':
-                                seg_names[idKey][k] = Waze.model.users.objects[seg_ids[idKey][k]].userName;
+                                seg_names[idKey][k] = W.model.users.objects[seg_ids[idKey][k]].userName;
                                 break;
                         }
                     }
@@ -722,7 +722,7 @@ var closeContextMenu = function () {
         window.removeEventListener('click', closeContextMenu, false);
         document.getElementById('toolbar').removeEventListener('mouseenter', closeContextMenu, false);
 
-    	Waze.selectionManager.events.unregister("selectionchanged", null, setupSegmentContextMenu);
+    	W.selectionManager.events.unregister("selectionchanged", null, setupSegmentContextMenu);
 
         // close the menu
         document.getElementById('cmContextMenu').style.display = 'none';
@@ -999,8 +999,8 @@ var populateCopyMenu = function (segInfo, contextMenuSettings) {
         }
         if (!s_names.state.length) document.getElementById('cm_state').parentNode.style.display = 'none';
 
-        var numSegments = Waze.selectionManager.selectionCountByType.segment;
-        if (!numSegments) numSegments = '0 Segment IDs';
+        var numSegments = getSelectedSegmentCount();
+        if (!numSegments || numSegments === 0) numSegments = '0 Segment IDs';
         else if (numSegments === 1) numSegments = '1 Segment ID';
         else numSegments = numSegments + ' Segment IDs';
         document.getElementById('cm_ids').innerHTML = numSegments;
@@ -1131,12 +1131,12 @@ SL.checkCountry = function () {
         currentNumCountries, currentCountries, convertUnits = false, isImperialCountry = false;
 
     try {
-        currentCountries = [Waze.model.countries.top.abbr];
+        currentCountries = [W.model.countries.top.abbr];
         currentNumCountries = 1;
     } catch (err) {
         console.warning('WMECM:', 'Could not find W.model.countries.top. Trying to use W.model.countries.objects instead.');
         try {
-            currentCountries = Object.keys(Waze.model.countries.objects);
+            currentCountries = Object.keys(W.model.countries.objects);
             currentNumCountries = currentCountries.length;
         } catch (err) {
             console.warning('WMECM:', 'WME objects might have been changed by Waze. This could be a problem and should be examined.');
@@ -1159,8 +1159,8 @@ SL.checkCountry = function () {
         }
     }
 
-    if (isImperialCountry  && !Waze.prefs.attributes.isImperial) convertUnits = 1; //convert metric --> imperial
-    else if (!isImperialCountry  && Waze.prefs.attributes.isImperial) convertUnits = 2; //convert imperial --> metric
+    if (isImperialCountry  && !W.prefs.attributes.isImperial) convertUnits = 1; //convert metric --> imperial
+    else if (!isImperialCountry  && W.prefs.attributes.isImperial) convertUnits = 2; //convert imperial --> metric
 
     SL.imperial.useMPH = isImperialCountry;
     SL.imperial.convertUnits = convertUnits;
@@ -1185,7 +1185,7 @@ SL.highlightSpeedSigns = function () {
     // Highlight the current speed limit
     var fwdSL = document.querySelector('input[name="fwdMaxSpeed"]'), fwdSpeedVal,
         revSL = document.querySelector('input[name="revMaxSpeed"]'), revSpeedVal,
-        numSegments = Waze.selectionManager.selectionCountByType.segment,
+        numSegments = getSelectedSegmentCount(),
         fwdSLMenu = document.querySelector('input[name="fwdMaxSpeed_cm'),
 		revSLMenu = document.querySelector('input[name="revMaxSpeed_cm'),
 		unverFwdChkBox = document.getElementById('fwdMaxSpeedUnverifiedCheckbox'),
@@ -1412,13 +1412,13 @@ SL.saveSpeedSignEdits = function(e) {
         country = SL.currentCountry;
 
     if (editedSpeedLimits.length !== 0) {
-        editedSpeedLimits = editedSpeedLimits.match(/\d+/g)
+        editedSpeedLimits = editedSpeedLimits.match(/\d+/g);
         contextMenuSettings.speedSigns[country] = {};
 
         if (SL.speedhelperIsPresent === false) {
             contextMenuSettings.speedSigns[country].speeds = editedSpeedLimits;
             contextMenuSettings.speedSigns[country].signShape = document.querySelector('#cmMenuSLEdit select').value;
-            contextMenuSettings.speedSigns[country].signBorderColor = document.querySelector('#cmMenuSLEdit input[name="signBorderColor"]').value
+            contextMenuSettings.speedSigns[country].signBorderColor = document.querySelector('#cmMenuSLEdit input[name="signBorderColor"]').value;
         } else { contextMenuSettings.speedhelper[country] = {speeds: editedSpeedLimits}; }
     }
 
@@ -1535,7 +1535,7 @@ SL.addSpeedSignAB = function(speedVal) {
 		fwdSL = document.querySelector('input[name="fwdMaxSpeed"]'),
 		fwdChkBox = document.getElementById('fwdMaxSpeedUnverifiedCheckbox'),
 		prevFwdSpeedVal = fwdSLMenu.value,
-		numSegsSelected = Waze.selectionManager.selectionCountByType.segment,
+		numSegsSelected = getSelectedSegmentCount(),
 		pauseTime = (numSegsSelected > 10) ? (50+numSegsSelected) : 0;
 
     cmlog([5,3],speedVal);
@@ -1572,7 +1572,7 @@ SL.addSpeedSignBA = function(speedVal) {
 		revSL = document.querySelector('input[name="revMaxSpeed"]'),
 		revChkBox = document.getElementById('revMaxSpeedUnverifiedCheckbox'),
 		prevRevSpeedVal = revSLMenu.value,
-		numSegsSelected = Waze.selectionManager.selectionCountByType.segment,
+		numSegsSelected = getSelectedSegmentCount(),
 		pauseTime = (numSegsSelected > 10) ? (50+numSegsSelected) : 0;
 
 	cmlog([5,3],speedVal);
@@ -1613,7 +1613,7 @@ SL.addSpeedSignBoth = function(speedVal) {
 		fwdChkBox = document.getElementById('fwdMaxSpeedUnverifiedCheckbox'),
 		revChkBox = document.getElementById('revMaxSpeedUnverifiedCheckbox'),
 		prevFwdSpeedVal, prevRevSpeedVal,
-		numSegsSelected = Waze.selectionManager.selectionCountByType.segment,
+		numSegsSelected = getSelectedSegmentCount(),
 		pauseTime = (numSegsSelected > 10) ? 60 : 0;
 
 	cmlog([5,3],speedVal);
@@ -1829,7 +1829,7 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
                 speedLimit.id = 'cmSpeedLimit';
                 speedLimit.className = 'cm-speed-limit cm-menu-section';
 
-                signholderEl = document.querySelector('#cmSpeedLimit #signsholder')
+                signholderEl = document.querySelector('#cmSpeedLimit #signsholder');
 
                 if (SL.speedhelperIsPresent !== null && SL.signsContainerHTML !== null) {
 	    	        document.getElementById('signsContainer').innerHTML = SL.signsContainerHTML;
@@ -2151,7 +2151,7 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
 
 //==============================================================================================
 var selectedItemsIsSegment = function () {
-    var sel = Waze.selectionManager.selectedItems, //returns empty array if nothing
+    var sel = W.selectionManager.getSelectedFeatures(), //returns empty array if nothing
         selLength = sel.length,
         s, segments = [];
 
@@ -2164,7 +2164,7 @@ var selectedItemsIsSegment = function () {
 };
 //----------------------------------------------------------------------------------------------
 var selectionIsSegment = function (e) {
-	cmlog([1,1], 'selectionIsSegment(e)')
+	cmlog([1,1], 'selectionIsSegment(e)');
     var sel, selLength, s, segments = [],
         numSelected, eventFeatures, evTarget, nodeLabel = false;
 
@@ -2191,10 +2191,10 @@ var selectionIsSegment = function (e) {
 			}
 		}
 
-        sel = Waze.selectionManager.selectedItems; //returns empty array if nothing
+        sel = W.selectionManager.getSelectedFeatures(); //returns empty array if nothing
         selLength = sel.length;
 
-        eventFeatures = Waze.map.segmentLayer.getFeatureById(evTarget._featureId); //segment layer -- returns null if nothing
+        eventFeatures = W.map.segmentLayer.getFeatureById(evTarget._featureId); //segment layer -- returns null if nothing
     	//cmlog([1,0], 'eventFeatures =')
     	//console.debug(eventFeatures);
 
@@ -2202,7 +2202,7 @@ var selectionIsSegment = function (e) {
             segments[0] = eventFeatures; //return result from W.map.segmentLayer.getFeatureById(._featureId) is the same as individual objects within the array returned by W.selectionManager.selectedItems
             try {
             	//cmlog([1,0],'SegID:',eventFeatures.model.attributes.id);
-            	Waze.selectionManager.select([eventFeatures.model]); // [eventFeatures.model] is the same as the return result for one seg from W.model.segments.getByIds([id])
+            	W.selectionManager.setSelectedModels([eventFeatures.model]); // [eventFeatures.model] is the same as the return result for one seg from W.model.segments.getByIds([id])
         	} catch(err) { cmlog([1,0], '<tantrum>'); console.error(err); }
         }
 
@@ -2247,7 +2247,7 @@ var selectionIsSegment = function (e) {
 //----------------------------------------------------------------------------------------------
 
 var setupSegmentContextMenu = function (e) {
-	cmlog([1,0],'------------------------------------------------------------')
+	cmlog([1,0],'------------------------------------------------------------');
     cmlog([1,1], 'setupSegmentContextMenu()');
 	if (document.getElementById('cmContextMenu') && document.getElementById('cmContextMenu').style.display !== 'none') {
 		var selectedStuff = selectionIsSegment(e);
@@ -2273,7 +2273,7 @@ var setupSegmentContextMenu = function (e) {
 	        document.getElementById('cmMenuContent').style.display = 'none';
 	        return false;
 	    } else {
-	    	cmlog([1,1],'No segment detected.')
+	    	cmlog([1,1],'No segment detected.');
 	        return false;
 	    }
 	} else {
@@ -2329,7 +2329,7 @@ var placeMenu = function (endevt) {
     //endevt.dataTransfer.dropEffect = 'move';
 	try {
 	    //document.getElementById('cmContextMenu').style.display = 'block';
-	    setTimeout(function(){document.getElementById('cmContextMenu').classList.remove('cm-drag')},50);
+	    setTimeout(function(){document.getElementById('cmContextMenu').classList.remove('cm-drag');},50);
 	    if (!isFirefox) {
 	    	document.getElementById('cmContextMenu').style.display = 'block';
 	    	document.getElementById('cmContextMenu').removeEventListener('drag', moveMenu, false);
@@ -2454,7 +2454,7 @@ var showPopupPanel = function(updateVersion, updateText, forumURL) {
         document.getElementById('divCMupdate').remove();
     	document.getElementById('cmUpdateNote').classList.remove('cm-unread');
     	document.getElementById('cssCMupdate').remove();
-    	requestAnimationFrame(function(){CMenuVersion.updateVersionString(minVersion)});
+    	requestAnimationFrame(function(){CMenuVersion.updateVersionString(minVersion);});
     };
 };
 
@@ -2703,7 +2703,7 @@ var initContextMenu = function () {
                 hidePasteMenu(false);
             } catch (err) {
                 console.error(err);
-            };
+            }
         };
 
         document.getElementById('cmRSel').onclick = function (e) {
@@ -2753,7 +2753,7 @@ var initContextMenu = function () {
         document.getElementById('map').addEventListener(
             'contextmenu',
             function (e) {
-				cmlog([1,0],'------------------------------------------------------------')
+				cmlog([1,0],'------------------------------------------------------------');
             	cmlog([1,1], 'contextmenu');
             	//console.info(e);
                 var selectedStuff = selectionIsSegment(e),
@@ -2779,7 +2779,7 @@ var initContextMenu = function () {
 							contextMenu.addEventListener('mouseenter', addHotkeyListener, false);
 							contextMenu.addEventListener('mouseleave', removeHotkeyListener, false);
 
-					        Waze.selectionManager.events.register("selectionchanged", null, setupSegmentContextMenu);
+					        W.selectionManager.events.register("selectionchanged", null, setupSegmentContextMenu);
 	                    }
                     } catch (err) { console.error(err); }
                 } else {
@@ -2867,15 +2867,23 @@ var initContextMenu = function () {
             var rselBtnEls = document.querySelectorAll('#RSconditions button');
             for (var b = rselBtnEls.length; b--;) {
                 rselBtnEls[b].addEventListener('click', function () {
-                    this.classList.remove('btn-info')
+                    this.classList.remove('btn-info');
                 }, false);
             }
         } catch (err) {
-            console.error(err)
+            console.error(err);
         }
-    }, 1200)
+    }, 1200);
 
 };
+
+var getSelectedSegmentCount = function(){
+	let count = _.countBy(W.selectionManager.getSelectedFeatures().map(function(e){return e.model.type}), _.identity).segment;
+	if( !count)
+		return 0;
+	else
+		return count;
+}
 
 var waitCount = 0,
     maxWaitCount = 50;
@@ -2883,10 +2891,9 @@ var waitForWaze = function () {
     try {
         if (document.getElementById('cmContextMenu')) {
             return true;
-        } else if (typeof(Waze) !== "undefined" && Waze.model && Waze.selectionManager &&
-        	Waze.selectionManager.selectedItems &&
-            Waze.model.segments && Waze.model.cities &&
-            Waze.map && Waze.map.layers) {
+        } else if (typeof(Waze) !== "undefined" && W.model && W.selectionManager &&
+            W.model.segments && W.model.cities &&
+            W.map && W.map.layers) {
 
             //cmlog([1],'starting...');
             setTimeout(initContextMenu, 1000);
