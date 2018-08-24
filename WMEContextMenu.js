@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            WME Context Menu
 // @namespace       https://greasyfork.org/users/30701-justins83-waze
-// @version         0.3.7
+// @version         2018.08.24.01
 // @description     A right-click popup menu for editing segments. Currently integrates with WME Speedhelper and Road Selector to help make it even easier and faster to edit the map.
 // @author          TheLastTaterTot
 // @include         https://beta.waze.com/*editor*
@@ -84,6 +84,7 @@ var roadTypes = {
     menuResetEvent_RSel = false,
     contextMenuSettings,
     changeEvent = new Event('change', { 'bubbles': true }),
+    focusOut = new Event('focusout', {'bubbles':true}),
     isFirefox = !!~navigator.userAgent.indexOf('irefox'),
     minVersion = '0.3.6';
 
@@ -1553,9 +1554,12 @@ SL.addSpeedSignAB = function(speedVal) {
 	    	if (fwdChkBox !== null && speedVal === prevFwdSpeedVal) {
 				fwdChkBox.checked = true;
 				fwdChkBox.dispatchEvent(changeEvent);
+                fwdChkBox.dispatchEvent(focusOut);
 			} else if (fwdSL !== null) {
 	    		fwdSL.value = speedVal;
 	    		fwdSL.dispatchEvent(changeEvent);
+                fwdSL.dispatchEvent(focusOut);
+                $('input[name="fwdMaxSpeed"]').val(speedVal).change().focusout();
 	    		//$(fwdSL).val(speedVal).change();
 	    		if (fwdChkBox !== null) setTimeout(function(){fwdChkBox.checked = true;},20);
 			}
@@ -1590,10 +1594,13 @@ SL.addSpeedSignBA = function(speedVal) {
 	    	if (revChkBox !== null && speedVal === prevRevSpeedVal) {
 	    		revChkBox.checked = true;
 	    		revChkBox.dispatchEvent(changeEvent);
+                revChkBox.dispatchEvent(focusOut);
 	    	} else if (revSL !== null) {
 	    		revSL.value = speedVal;
 	    		revSL.dispatchEvent(changeEvent);
+                revSL.dispatchEvent(focusOut);
 	    		//$(revSL).val(speedVal).change();
+                $('input[name="revMaxSpeed"]').val(speedVal).change().focusout();
 	    		if (revChkBox !== null) setTimeout(function(){revChkBox.checked = true;},20);
 	    	}
 
@@ -1640,21 +1647,24 @@ SL.addSpeedSignBoth = function(speedVal) {
 	    	if (fwdChkBox !== null && speedVal === prevFwdSpeedVal) {
 				fwdChkBox.checked = true;
 				fwdChkBox.dispatchEvent(changeEvent);
+                fwdChkBox.dispatchEvent(focusOut);
 				//$('#fwdMaxSpeedUnverifiedCheckbox').prop('checked', true).change();
 			} else if (fwdSL !== null) {
 	    		fwdSL.value = speedVal;
 	    		fwdSL.dispatchEvent(changeEvent);
-				//$('input[name="fwdMaxSpeed"]').val(speedVal).change();
+                fwdSL.dispatchEvent(focusOut);
+				$('input[name="fwdMaxSpeed"]').val(speedVal).change().focusout();
 			}
 
 	    	if (revChkBox !== null && speedVal === prevRevSpeedVal) {
 	    		revChkBox.checked = true;
 	    		revChkBox.dispatchEvent(changeEvent);
+                revChkBox.dispatchEvent(focusOut);
     			//$('#revMaxSpeedUnverifiedCheckbox').prop('checked', true).change();
 	    	} else if (revSL !== null) {
     			//revSL.value = speedVal;
     			//revSL.dispatchEvent(changeEvent);
-	    		$('input[name="revMaxSpeed"]').val(speedVal).change();
+	    		$('input[name="revMaxSpeed"]').val(speedVal).change().focusout();
 	    		if (fwdChkBox !== null) setTimeout(function(){fwdChkBox.checked = true;},20);
 	    		if (revChkBox !== null) setTimeout(function(){revChkBox.checked = true;},40);
 	    	}
