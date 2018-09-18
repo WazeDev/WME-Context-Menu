@@ -1,16 +1,25 @@
 // ==UserScript==
 // @name            WME Context Menu
 // @namespace       https://greasyfork.org/users/30701-justins83-waze
-// @version         2018.08.24.01
+// @version         2018.09.17.01
 // @description     A right-click popup menu for editing segments. Currently integrates with WME Speedhelper and Road Selector to help make it even easier and faster to edit the map.
 // @author          TheLastTaterTot
-// @include         https://beta.waze.com/*editor*
-// @include         https://www.waze.com/*editor*
-// @exclude         https://www.waze.com/*user/editor/*
+// @include         https://www.waze.com/editor*
+// @include         https://www.waze.com/*/editor*
+// @include         https://beta.waze.com/editor*
+// @include         https://beta.waze.com/*/editor*
+// @exclude         https://www.waze.com/user/editor*
 // @grant           none
 // @run-at          document-end
 // ==/UserScript==
-/* jshint -W097 */
+
+/* global $ */
+/* global W */
+/* global OL */
+/* ecmaVersion 2017 */
+/* global require */
+/* global _ */
+/* eslint curly: ["warn", "multi-or-nest"] */
 
 //--------------- DEBUG ----------------
 var DEBUG = false;
@@ -28,7 +37,7 @@ function cmlog() {
 
 	    if (debugCode === DEBUG) {
 	    	argArray = argArray.splice(1);
-
+            let logCss = '';
 	    	switch (debugStyle) {
 	    		case 1: // examine functions
 	    			logCss = 'background: #444; color: #6FF';
@@ -121,7 +130,7 @@ if (localStorage.WME_ContextMenu) {
 }
 
 //------------------------------------------------------------------------------
-CMenuVersion = {
+var CMenuVersion = {
     currentVersion: GM_info.script.version,
     lastVersionString: function(){return contextMenuSettings.version;},
     convertToNumericVersion: function(versionString) {
@@ -130,18 +139,17 @@ CMenuVersion = {
 
         if (versionString) {
             if (versionString.constructor === Array) {
-                if (versionString.length === 1) {
+                if (versionString.length === 1)
                     versionString = versionString[0];
-                } else {
+                else
                     console.error('WMECM:', 'versionString is an array with more than 1 element.');
-                }
             }
             return versionString.match(/(\d)+/g).map(function(d, i) {
                 versionNumeric += d * vMult[i];
             }), versionNumeric;
-        } else {
-            return null;
         }
+        else
+            return null;
     },
     getLastVersionValue: function() {
         return this.convertToNumericVersion(this.lastVersionString());
@@ -209,7 +217,6 @@ var addPasteItems = function(attrName) {
             pasteOption.className = 'cm-paste';
             pasteOption.innerHTML = clipboard.value;
             pasteOption.name = clipboard.value;
-            //$('#'+attrName+'>dt').after('<dd class="cm-paste" name="' + clipboard.value + '">' + clipboard.value +'</dd>');
 
             $('#' + attrName + ' .cm-paste').remove();
 
@@ -268,11 +275,10 @@ var addStreetAndCityToRSel = function (segIds, caseSelection) {
             if (segIds.primaryStreet.length !== 0) {
                 for (s = segIds.primaryStreet.length; s--;) {
                     if (addConjunction) {
-                        if (opAndOr) {
+                        if (opAndOr)
                             document.getElementById('btnRSOr').click();
-                        } else {
+                        else
                             document.getElementById('btnRSAnd').click();
-                        }
                     }
                     if (opNot) document.getElementById('btnRSNot').click();
                     //set to primary
@@ -331,11 +337,10 @@ var addStreetNameToRSel = function (segNames, inputFieldId, altSelId, altVal, ad
 
     for (var n = 0, nLength = segNames.length; n < nLength; n++) {
         if (addConjunction) {
-            if (opAndOr) {
+            if (opAndOr)
                 document.getElementById('btnRSOr').click();
-            } else {
+            else
                 document.getElementById('btnRSAnd').click();
-            }
         }
         if (opNot) document.getElementById('btnRSNot').click();
 
@@ -354,11 +359,10 @@ var addRoadTypeToRSel = function (ids, inputFieldId, addBtnId) {
     document.getElementById('btnRSLBkt').click();
     for (var n = 0, nLength = ids.length; n < nLength; n++) {
         if (addConjunction) {
-            if (opAndOr) {
+            if (opAndOr)
                 document.getElementById('btnRSOr').click();
-            } else {
+            else
                 document.getElementById('btnRSAnd').click();
-            }
         }
         if (opNot) document.getElementById('btnRSNot').click();
 
@@ -379,9 +383,8 @@ var copyToClipboard = function(id,str) {
         $hiddenText.css('left','-1000px');
         $hiddenText.css('opacity',0);
         $("body").append($hiddenText);
-    } else {
+    } else
         $hiddenText = $('#input_' + id);
-    }
     $hiddenText.val(str).select();
     document.execCommand("copy");
     //$temp.remove();
@@ -403,9 +406,8 @@ var copyTo = function (e, opt, val) {
                         document.getElementById('btnRSLBkt').click();
                         addStreetAndCityToRSel(val, 0);
                         document.getElementById('btnRSRBkt').click();
-                    } else {
+                    } else
                         addStreetAndCityToRSel(val, 0);
-                    }
                     break;
                 case 'cm_altSC':
                     if (document.getElementById('cmRoadType').classList.contains('active')) {
@@ -414,9 +416,8 @@ var copyTo = function (e, opt, val) {
                         document.getElementById('btnRSLBkt').click();
                         addStreetAndCityToRSel(val, 1);
                         document.getElementById('btnRSRBkt').click();
-                    } else {
+                    } else
                         addStreetAndCityToRSel(val, 1);
-                    }
                     break;
                 case 'cm_anySC':
                     if (document.getElementById('cmRoadType').classList.contains('active')) {
@@ -425,9 +426,8 @@ var copyTo = function (e, opt, val) {
                         document.getElementById('btnRSLBkt').click();
                         addStreetAndCityToRSel(val, 2);
                         document.getElementById('btnRSRBkt').click();
-                    } else {
+                    } else
                         addStreetAndCityToRSel(val, 2);
-                    }
                     break;
                 case 'cm_priS':
                     if (document.getElementById('cmRoadType').classList.contains('active')) {
@@ -436,9 +436,8 @@ var copyTo = function (e, opt, val) {
                         document.getElementById('btnRSLBkt').click();
                         addStreetNameToRSel(getUnique(val.primaryStreet), 'inRSStreet', 'selRSAlttStreet', 0, 'btnRSAddStreet');
                         document.getElementById('btnRSRBkt').click();
-                    } else {
+                    } else
                         addStreetNameToRSel(getUnique(val.primaryStreet), 'inRSStreet', 'selRSAlttStreet', 0, 'btnRSAddStreet');
-                    }
                     break;
                 case 'cm_altS':
                     if (document.getElementById('cmRoadType').classList.contains('active')) {
@@ -447,9 +446,8 @@ var copyTo = function (e, opt, val) {
                         document.getElementById('btnRSLBkt').click();
                         addStreetNameToRSel(getUnique(val.altStreets), 'inRSStreet', 'selRSAlttStreet', 1, 'btnRSAddStreet');
                         document.getElementById('btnRSRBkt').click();
-                    } else {
+                    } else
                         addStreetNameToRSel(getUnique(val.altStreets), 'inRSStreet', 'selRSAlttStreet', 1, 'btnRSAddStreet');
-                    }
                     break;
                 case 'cm_anyS':
                     if (document.getElementById('cmRoadType').classList.contains('active')) {
@@ -459,10 +457,9 @@ var copyTo = function (e, opt, val) {
                         addStreetNameToRSel(getUnique(val.primaryStreet), 'inRSStreet', 'selRSAlttStreet', 0, 'btnRSAddStreet');
                         addStreetNameToRSel(getUnique(val.altStreets), 'inRSStreet', 'selRSAlttStreet', 1, 'btnRSAddStreet');
                         document.getElementById('btnRSRBkt').click();
-                    } else {
+                    } else
                         addStreetNameToRSel(getUnique(val.primaryStreet), 'inRSStreet', 'selRSAlttStreet', 0, 'btnRSAddStreet');
                         addStreetNameToRSel(getUnique(val.altStreets), 'inRSStreet', 'selRSAlttStreet', 1, 'btnRSAddStreet');
-                    }
                     break;
                 case 'cm_ids':
                     document.getElementById('inRSSegId').value = val;
@@ -577,11 +574,6 @@ var getAutoAddToRSelCase = function (addType) {
 var getSegmentProperties = function (selectedStuff) {
 	cmlog([1,1], 'getSegmentProperties()');
     try {
-        /*var roadTypeOpts = document.querySelector('#segment-edit-general select[name="roadType"]'),
-            numRoadTypes = roadTypeOpts.options.length, r, roadTypes = {};
-        for (r=0; r < numRoadTypes; r++) {
-            roadTypes[roadTypeOpts[r].value] = roadTypeOpts[r].text;
-        }*/
         var s, segments = selectedStuff.segments,
             s_altStObjKeys, s_altSt, s_toConnObjKeys, a, numAlts, k, numKeys;
 
@@ -606,10 +598,10 @@ var getSegmentProperties = function (selectedStuff) {
                 s_ids.primaryStreet[segments[s].model.attributes.primaryStreetID] = null;
                 if (W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID) {
                     s_ids.primaryCity[W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID] = null;
-                    if (W.model.cities.objects[W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].stateID)
-                        s_ids.state[W.model.cities.objects[W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].stateID] = null;
+                    if (W.model.cities.objects[W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].attributes.stateID)
+                        s_ids.state[W.model.cities.objects[W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].attributes.stateID] = null;
 
-                    s_ids.country[W.model.cities.objects[W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].countryID] = null;
+                    s_ids.country[W.model.cities.objects[W.model.streets.objects[segments[s].model.attributes.primaryStreetID].cityID].attributes.countryID] = null;
                 }
             }
             s_ids.roadType[segments[s].model.attributes.roadType] = null;
@@ -620,7 +612,7 @@ var getSegmentProperties = function (selectedStuff) {
 
             s_altSt = segments[s].model.attributes.streetIDs;
             numAlts = s_altSt.length;
-            for (a = 0;  a < numAlts; a++) {
+            for (a = 0; a < numAlts; a++) {
                 try {
                     s_ids.altStreets[s_altSt[a]] = null;
                     s_ids.altCities[W.model.streets.objects[s_altSt[a]].cityID] = null;
@@ -665,13 +657,13 @@ var getSegmentProperties = function (selectedStuff) {
                                 seg_names[idKey][k] = W.model.streets.objects[seg_ids[idKey][k]].name;
                                 break;
                             case 'primaryCity':
-                                seg_names[idKey][k] = W.model.cities.objects[seg_ids[idKey][k]].name;
+                                seg_names[idKey][k] = W.model.cities.objects[seg_ids[idKey][k]].attributes.name;
                                 break;
                             case 'altStreets':
                                 seg_names[idKey][k] = W.model.streets.objects[seg_ids[idKey][k]].name;
                                 break;
                             case 'altCities':
-                                seg_names[idKey][k] = W.model.cities.objects[seg_ids[idKey][k]].name;
+                                seg_names[idKey][k] = W.model.cities.objects[seg_ids[idKey][k]].attributes.name;
                                 break;
                             case 'state':
                                 seg_names[idKey][k] = W.model.states.objects[seg_ids[idKey][k]].name;
@@ -711,6 +703,15 @@ var removeHotkeyListener = function() {
     cmlog([2,2],'Removing global hotkey listener due to mouseleave');
 };
 
+var handleSelectionChanged = function(e){
+    if(!$('#cmPinMenu')[0].value){
+        if(!selectedItemsIsSegment(e))
+            closeContextMenu();
+        else
+            setupSegmentContextMenu(e);
+    }
+}
+
 var closeContextMenu = function () {
 	cmlog([1,1], 'closeContextMenu()');
     try {
@@ -724,6 +725,7 @@ var closeContextMenu = function () {
         document.getElementById('toolbar').removeEventListener('mouseenter', closeContextMenu, false);
 
     	W.selectionManager.events.unregister("selectionchanged", null, setupSegmentContextMenu);
+        W.selectionManager.events.unregister("selectionchanged", null, handleSelectionChanged);
 
         // close the menu
         document.getElementById('cmContextMenu').style.display = 'none';
@@ -733,13 +735,13 @@ var closeContextMenu = function () {
 
 var addSpecialMenuListeners = function () {
 	cmlog([1,1], 'addSpecialMenuListeners()');
-    if (document.getElementById('cmPinMenu').value) {
+    if ($('#cmPinMenu')[0].value) {
         window.removeEventListener('click', closeContextMenu, false);
         document.getElementById('toolbar').removeEventListener('mouseenter', closeContextMenu, false);
     } else {
         window.addEventListener('keydown', menuShortcutKeys, true);
         cmlog([2,2],'Adding just global hotkey listener via addSpecialMenuListeners()');
-        window.addEventListener('click', closeContextMenu, false);
+        //window.addEventListener('click', closeContextMenu, false);
         document.getElementById('toolbar').addEventListener('mouseenter', closeContextMenu, false);
     }
 };
@@ -767,9 +769,9 @@ var hideMenuSection = function(evt, sectionName) {
     if (evt) {
         that = evt.target;
         evt.stopPropagation();
-    } else if (sectionName) {
-        that = document.querySelector('.cm-menu-section[name=' + sectionName + ']>.cm-hide');
     }
+    else if (sectionName)
+        that = document.querySelector('.cm-menu-section[name=' + sectionName + ']>.cm-hide');
 
     that.classList.toggle('fa-caret-down');
     that.classList.toggle('fa-caret-up');
@@ -817,10 +819,9 @@ var resetContextMenu = function (contextMenuSettings) {
 	            '<dd id="cm_S">All <span id="cm_textS">Primary/Alt. Street</span></dd>' +
 	        '</dl>' +
 	    '</div>';
-	} else {
-		document.getElementById('cmContainer').innerHTML = '';
 	}
-
+    else
+		document.getElementById('cmContainer').innerHTML = '';
 
     menuHTML = '<div class="cm-menu-header"><dl><dt id="cmMenuHeaderTitle">Copy To Clipboard</dt></dl></div>' +
     '<div id="cmMenuNoContent" class="cm-menu-section" style="display: none;"><dd>No valid segment(s) selected</dd></div>' +
@@ -853,7 +854,6 @@ var resetContextMenu = function (contextMenuSettings) {
     '</div></div>';
 
 
-
     for (var h in contextMenuSettings.hidden) {
         if (contextMenuSettings.hidden[h]) //hideMenuSection(null, h);
             menuHTML = menuHTML.replace(new RegExp('(name="' + h + '" class=")','m'),'$1cm-hidden ');
@@ -864,9 +864,8 @@ var resetContextMenu = function (contextMenuSettings) {
     $('.cm-hide').click(hideMenuSection);
 
     // if menu is not pinned
-    if (!document.getElementById('cmPinMenu').value) {
+    if (!document.getElementById('cmPinMenu').value)
         setTimeout(addSpecialMenuListeners, 250);
-    }
 
     adjustContextMenubar(contextMenuSettings.position);
 };
@@ -882,11 +881,184 @@ var hidePasteMenu = function(bit) {
     }
 };
 
+var populateEditAttributes = function(segInfo, contextMenuSettings){
+    $('#cmMenuNoContent')[0].style.display = 'none';
+    $('#cmMenuContent')[0].style.display = 'block';
+
+    try{
+        let userRank = W.loginManager.user.rank; //0 based rank
+        resetContextMenu(contextMenuSettings);
+        let elevation = $('select[name="level"]').val(); //have to get the current elevation before we create our interface
+
+        let segLocked;
+        if($('.lock-level-displayer').css("display") === "none")
+            segLocked= $('input[name="lockRank"]:checked')[0].value; //We have to get the segment lock rank before building the display since we are mimicing the native interface and are going to only display the locked level when it is locked above the user's rank
+        else
+            segLocked = "LOCKED";
+
+        document.getElementById('cmMenuHeaderTitle').innerHTML = "Edit Attributes";
+        document.getElementById('cmMenuContent').innerHTML = '<div class="cm-menu-section"><dd>' +
+            `<input type="checkbox" id="cmUnpaved" ${segLocked === "LOCKED" ? 'disabled' : ''}><label for="cmUnpaved">Unpaved</label><br>` +
+            `<input type="checkbox" id="cmTunnel" ${segLocked === "LOCKED" ? 'disabled' : ''}><label for="cmTunnel">Tunnel</label><br>` +
+            `<input type="checkbox" id="cmHeadlights" ${segLocked === "LOCKED" ? 'disabled' : ''}><label for="cmHeadlights">Headlights</label></dd>` +
+            `<dl><dt>Direction</dt><dd class="waze-radio-container"><input type="radio" name="cmdirection" value="-1" id="cmSegDirectionMultiple" data-type="numeric" data-nullable="true"><label for="cmSegDirectionMultiple" style="display:none;">&lt; Multiple &gt;</label><input type="radio" name="cmdirection" value="3" id="cmSegDirectionTwoWay" data-type="numeric" ${segLocked === "LOCKED" ? 'disabled' : ''}><label for="cmSegDirectionTwoWay" style="font-size:11px">${I18n.translations[I18n.currentLocale()].segment.direction[3]}</label><input type="radio" name="cmdirection" value="1" id="cmSegDirectionAB" data-type="numeric" ${segLocked === "LOCKED" ? 'disabled' : ''}><label for="cmSegDirectionAB" style="font-size:11px">${I18n.translations[I18n.currentLocale()].segment.direction[1]}</label><input type="radio" name="cmdirection" value="2" id="cmSegDirectionBA" data-type="numeric" ${segLocked === "LOCKED" ? 'disabled' : ''}><label for="cmSegDirectionBA" style="font-size:11px">${I18n.translations[I18n.currentLocale()].segment.direction[2]}</label><input type="radio" name="cmdirection" value="0" id="cmSegDirectionUnknown" data-type="numeric" ${segLocked === "LOCKED" ? 'disabled' : ''}><label for="cmSegDirectionUnknown" style="display: none;">Unknown</label></dd></dl>` +
+            '<dl><dt>Lock</dt><dd class="waze-radio-container">' +
+            (segLocked !== "LOCKED" ? ( //if the segment(s) are not locked above the user's rank, display the lock level buttons
+            ((segLocked === "MIXED") ? '<input type="radio" name="cmSegmentLock" value="MIXED" id="cmlockRankMulti" data-type="string"><label for="cmlockRankMulti" style="display: inline-block;">&lt; Multiple &gt;</label>' : '') +
+            ((segLocked === "AUTO" || segLocked === "MIXED" || (segLocked <= userRank)) ? '<input type="radio" value="AUTO" id="cmlockRankAuto" name="cmSegmentLock"><label for="cmlockRankAuto">Auto</label>' : '') +
+            buildLockButtons(segLocked, userRank)
+            ) : `<input type="radio" id="cmSegmentLocked" name="cmlockRankDisplay" disabled checked><label for="cmSegmentLocked">${$(`label[for^="lockRankDisplay"]`).text()}</label>`) +
+            '</dd></dl>' +
+            `<dl><dt>Elevation</dt><dd><select class="form-control" id="cmElevation" name="level" style="display: inline-block; width: 100px; height:20px; padding: 0px 0px 0px 12px !important; margin-right: 10px; margin-bottom:3px;" ${segLocked === "LOCKED" ? 'disabled' : ''}><option value="9">9</option><option value="8">8</option><option value="7">7</option><option value="6">6</option><option value="5">5</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1</option><option value="0">${I18n.translations[I18n.currentLocale()].edit.segment.levels[0]}</option><option value="-1">-1</option><option value="-2">-2</option><option value="-3">-3</option><option value="-4">-4</option></select></dd><dd><div class="btn waze-btn waze-btn-white" id="cmElevationMinus" style="height: 20px;padding-left: 8px;padding-right: 8px;margin-right: 4px;padding-top: 1px; font-size:11px" ${segLocked === "LOCKED" ? 'disabled' : ''}>-</div><div class="btn waze-btn waze-btn-white" id="cmElevationGround" style="height: 20px;padding-left: 8px;padding-right: 8px;margin-right: 4px;padding-top: 1px; font-size:11px" ${segLocked === "LOCKED" ? 'disabled' : ''}>${I18n.translations[I18n.currentLocale()].edit.segment.levels[0]}</div><div class="btn waze-btn waze-btn-white" id="cmElevationPlus" style="height: 20px;padding-left: 8px;padding-right: 8px;margin-right: 4px;padding-top: 1px; font-size:11px"  ${segLocked === "LOCKED" ? 'disabled' : ''}>+</div></dd></dl>` +
+            '</div>';
+
+        $('#cmElevation').val(elevation);
+
+        if($('#headlightsCheckbox').attr("mixed") === 'true')
+            $('#cmHeadlights')[0].indeterminate = true;
+        else
+            $("#cmHeadlights").prop("checked", $('#headlightsCheckbox').prop("checked") === true);
+
+        if($('#unpavedCheckbox').attr("mixed") === 'true')
+            $('#cmUnpaved')[0].indeterminate = true;
+        else
+            $("#cmUnpaved").prop("checked", $('#unpavedCheckbox').prop("checked") === true);
+
+        if($('#tunnelCheckbox').attr("mixed") === 'true')
+            $('#cmTunnel')[0].indeterminate = true;
+        else
+            $("#cmTunnel").prop("checked", $('#tunnelCheckbox').prop("checked") === true);
+
+        if(segLocked !== "LOCKED"){
+            $("#cmHeadlights").click(function(){
+                $('#headlightsCheckbox').click();
+            });
+
+            $('#headlightsCheckbox').click(function(){
+                $("#cmHeadlights").prop("checked", $('#headlightsCheckbox').prop("checked") === true);
+            });
+
+            $("#cmUnpaved").click(function(){
+                $('#unpavedCheckbox').click();
+            });
+
+            $('#unpavedCheckbox').click(function(){
+                $("#cmUnpaved").prop("checked", $('#unpavedCheckbox').prop("checked") === true);
+            });
+
+            $("#cmTunnel").click(function(){
+                $('#tunnelCheckbox').click();
+            });
+
+            $('#tunnelCheckbox').click(function(){
+                $("#cmTunnel").prop("checked", $('#tunnelCheckbox').prop("checked") === true);
+            });
+        }
+        /************** Segment Direction *****************/
+        //3 = two way, 1 = A->B, 2 = B->A, 0= Unknown, -1 = multiple
+        let segDirection = $('input[name="direction"]:checked')[0].value;
+        $(`input[name="cmdirection"][value="${segDirection}"]`).prop("checked", true)
+
+        if(segDirection === "0" || segDirection === "-1"){
+            let id = $(`input[name="cmdirection"][value="${segDirection}"]`)[0].id;
+            $(`label[for="${id}"]`).css("display", "inline-block");
+        }
+
+        $('input[name="direction"]').click(function(){
+            $(`input[name="cmdirection"][value="${$(this)[0].value}"]`).prop("checked", true);
+            if($(this)[0].value > 0){ //if the user selected a direction, hide the options for Multiple and Unknown (mimic same as native)
+                $(`label[for="cmSegDirectionUnknown"]`).css("display", "none");
+                $(`label[for="cmSegDirectionMultiple"]`).css("display", "none");
+            }
+        });
+
+        $('input[name="cmdirection"]').click(function(){
+            $(`input[name="direction"][value="${$(this)[0].value}"]`).click();
+            if($(this)[0].value > 0){ //if the user selected a direction, hide the options for Multiple and Unknown (mimic same as native)
+                $(`label[for="cmSegDirectionUnknown"]`).css("display", "none");
+                $(`label[for="cmSegDirectionMultiple"]`).css("display", "none");
+            }
+        });
+
+        /************* Segment Lock Levels *****************/
+        $(`input[name="cmSegmentLock"][value="${segLocked}"]`).prop("checked", true)
+
+        $('input[name="lockRank"]').click(function(){
+            $(`input[name="cmSegmentLock"][value="${$(this)[0].value}"]`).prop("checked", true);
+            $(`label[for="cmlockRankMulti"]`).css("display", "none");
+        });
+
+        //Need a MO because changing the lock level redraws that section so we have to re-establish our click handler
+        var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if ($(mutation.target).hasClass('lock-edit') && mutation.addedNodes.length > 0){
+                    $('input[name="lockRank"]').click(function(){
+                        $(`input[name="cmSegmentLock"][value="${$(this)[0].value}"]`).prop("checked", true);
+                        $(`label[for="cmlockRankMulti"]`).css("display", "none");
+                    });
+                }
+            });
+        });
+
+        observer.observe(document.getElementById('edit-panel'), { childList: true, subtree: true });
+
+        $('input[name="cmSegmentLock"]').click(function(){
+            $(`input[name="lockRank"][value="${$(this)[0].value}"]`).click();
+            $(`label[for="cmlockRankMulti"]`).css("display", "none");
+        });
+
+        /****************** Segment Elevation *********************/
+
+        if(segLocked !== "LOCKED"){
+            $('#cmElevationPlus').click(function(){
+                let level = parseInt($('select[name="level"]').val());
+                if (level < 9)
+                    $('select[name="level"]').val(level + 1).change();
+            });
+
+            $('#cmElevationGround').click(function(){
+                let level = parseInt($('select[name="level"]').val());
+                if (level !== 0)
+                    $('select[name="level"]').val(0).change();
+            });
+
+            $('#cmElevationMinus').click(function(){
+                let level = parseInt($('select[name="level"]').val());
+                if (level > -5)
+                    $('select[name="level"]').val(level - 1).change();
+            });
+
+            $('.side-panel-section select[name="level"]').change(function(){
+                $("#cmElevation").val($(this).val());
+            });
+
+            $("#cmElevation").change(function(){
+                $('.side-panel-section select[name="level"]').val($(this).val()).change();
+            });
+        }
+    }
+    catch (err) {
+    	cmlog([1,1], err);
+    }
+}
+
+function buildLockButtons(segLock, userRank){
+    let buttonCode = '';
+    if(segLock === "AUTO" || segLock === "MIXED" || segLock <= userRank){
+        for(let i=0; i<=userRank; i++)
+            buttonCode += `<input type="radio" value="${i}" id="cmlockRank${i}" name="cmSegmentLock"><label for="cmlockRank${i}">${i+1}</label>`;
+    }
+    else
+        buttonCode += `<input type="radio" value="${segLock}" id="cmlockRank${parseInt(segLock)}" name="cmSegmentLock"><label for="cmlockRank${parseInt(segLock)}" disabled>${parseInt(segLock)+1}</label>`;
+
+    return buttonCode;
+}
+
 var populateCopyMenu = function (segInfo, contextMenuSettings) {
 	cmlog([1,1], 'populateCopyMenu()');
 
-    document.getElementById('cmMenuNoContent').style.display = 'none';
-    document.getElementById('cmMenuContent').style.display = 'block';
+    $('#cmMenuNoContent')[0].style.display = 'none';
+    $('#cmMenuContent')[0].style.display = 'block';
 
     try {
         resetContextMenu(contextMenuSettings);
@@ -911,11 +1083,10 @@ var populateCopyMenu = function (segInfo, contextMenuSettings) {
 	                    	selOption = document.createElement('dd');
 	                        if (s_names[updateNames[n]][a]) {
 	                            if (s_names[updateNames[n]][a] === '') { //no city or no street
-	                                if (/city/i.test(updateNames[n])) {
+	                                if (/city/i.test(updateNames[n]))
 	                                    selOption.innerHTML = 'No City';
-	                                } else if (/street/i.test(updateNames[n])) {
+	                                else if (/street/i.test(updateNames[n]))
 	                                    selOption.innerHTML = 'No Street';
-	                                }
 	                                //selOption.name = '';
 	                            } else { //add the property value to the menu
 	                                selOption.innerHTML = s_names[updateNames[n]][a];
@@ -939,9 +1110,9 @@ var populateCopyMenu = function (segInfo, contextMenuSettings) {
 	                                        copyTo(e, this.parentNode.id, this.name);
 	                                    };
 	                            }
-	                        } else {
-	                            emptyArr++;
 	                        }
+                            else
+	                            emptyArr++;
 	                    } catch(err) { console.error(err); }
                     }
 
@@ -949,10 +1120,10 @@ var populateCopyMenu = function (segInfo, contextMenuSettings) {
                     if (document.getElementById('cmClipboard').value) addPasteItems('cm_' + updateNames[n]);
 
                     // Hide section if nothing to copy
-                    if (emptyArr === aLength && !$('#input_cm_' + updateNames[n]).length) {
+                    if (emptyArr === aLength && !$('#input_cm_' + updateNames[n]).length)
                         sectionElement.style.display = "none";
                         //sectionElement.parentNode.children[0].style.display = "none";
-		            } else if ($('#input_cm_' + updateNames[n]).length) { //show if something to paste
+		            else if ($('#input_cm_' + updateNames[n]).length) { //show if something to paste
 		            	selOption = document.createElement('dd');
 		            	selOption.innerHTML = '&nbsp;';
 		            	sectionElement.appendChild(selOption);
@@ -973,13 +1144,11 @@ var populateCopyMenu = function (segInfo, contextMenuSettings) {
                 sectionElement.parentNode.children[1].style.display = "none"; //caret-up
             } else if (sectionElement && $('#input_cm_' + updateNames[n]).length) { //show if something to paste
             	selOption = document.createElement('dd');
-                if (/city/i.test(updateNames[n])) {
+                if (/city/i.test(updateNames[n]))
                     selOption.innerHTML = 'No City';
-                } else if (/street/i.test(updateNames[n])) {
+                else if (/street/i.test(updateNames[n]))
                     selOption.innerHTML = 'No Street';
-                } /*else {
-                	selOption.innerHTML = '&nbsp;';
-                }*/
+
                 if (selOption.innerHTML.length) {
 	                selOption.name = '';
 	                sectionElement.appendChild(selOption);
@@ -992,12 +1161,12 @@ var populateCopyMenu = function (segInfo, contextMenuSettings) {
             }
         }
         // Hide sections if nothing to copy
-        if (!s_names.primaryStreet.length && !s_names.altStreets.length && !$('#input_cm_primaryStreet').length) {
+        if (!s_names.primaryStreet.length && !s_names.altStreets.length && !$('#input_cm_primaryStreet').length)
             document.getElementById('cm_primaryStreet').parentNode.style.display = 'none';
-        }
-        if (!s_names.primaryCity.length && !s_names.altCities.length && !$('#input_cm_primaryCity').length) {
+
+        if (!s_names.primaryCity.length && !s_names.altCities.length && !$('#input_cm_primaryCity').length)
             document.getElementById('cm_primaryCity').parentNode.style.display = 'none';
-        }
+
         if (!s_names.state.length) document.getElementById('cm_state').parentNode.style.display = 'none';
 
         var numSegments = getSelectedSegmentCount();
@@ -1068,11 +1237,10 @@ var populateCopyMenu = function (segInfo, contextMenuSettings) {
             //road type
             document.getElementById('cmRoadType').addEventListener('click', function (e) {
                 e.stopPropagation();
-                if (document.getElementById('cmRoadType').classList.contains('active')) {
+                if (document.getElementById('cmRoadType').classList.contains('active'))
                     document.getElementById('cmRoadType').classList.remove('active');
-                } else {
+                else
                     document.getElementById('cmRoadType').classList.add('active');
-                }
             }, false);
 
             //operations
@@ -1087,16 +1255,15 @@ var populateCopyMenu = function (segInfo, contextMenuSettings) {
 
             document.getElementById('cmOpNot').addEventListener('click', function (e) {
                 e.stopPropagation();
-                if (document.getElementById('cmOpNot').classList.contains('active')) {
+                if (document.getElementById('cmOpNot').classList.contains('active'))
                     document.getElementById('cmOpNot').classList.remove('active');
-                } else {
+                else
                     document.getElementById('cmOpNot').classList.add('active');
-                }
             }, false);
 
             //menu selections
             document.getElementById('cm_SC').addEventListener('click', function (e) {
-                copyTo(e, getAutoAddToRSelCase('cm_SC'), segInfo.ids);
+                copyTo(e, getAutoAddToRSelCase('cm_SC'), segInfo.names);
             }, false);
             document.getElementById('cm_S').addEventListener('click', function (e) {
                 copyTo(e, getAutoAddToRSelCase('cm_S'), segInfo.names);
@@ -1112,7 +1279,6 @@ var populateCopyMenu = function (segInfo, contextMenuSettings) {
                 copyTo(e, getAutoAddToRSelCase('cm_S'), segInfo.names);
                 document.getElementById('btnRSSelect').click();
             }, false);
-
         }
     } catch (err) {
     	cmlog([1,1], err);
@@ -1280,9 +1446,8 @@ SL.getSpeedLimits = function() {
 
     if (origSignsEl.length !== 0) signsEls = origSignsEl;
 
-    for (var s = 0, nSigns = signsEls.length; s < nSigns; s++) {
+    for (var s = 0, nSigns = signsEls.length; s < nSigns; s++)
         speedLimits.push(signsEls[s].children[0].innerHTML);
-    }
     return speedLimits;
 };
 
@@ -1301,9 +1466,9 @@ SL.createSpeedSigns = function() {
             document.getElementById('cmSpeedSignsCSS').remove();
             if (document.getElementById('signsholder_cm') !== null) document.getElementById('signsholder_cm').className = '';
         }
-        if (contextMenuSettings.speedhelper && contextMenuSettings.speedhelper[country] && contextMenuSettings.speedhelper[country].speeds) {
+        if (contextMenuSettings.speedhelper && contextMenuSettings.speedhelper[country] && contextMenuSettings.speedhelper[country].speeds)
             speedLimits = contextMenuSettings.speedhelper[country].speeds;
-        } else {
+        else {
             speedLimits = SL.getSpeedLimits();
             contextMenuSettings.speedhelper[country] = {speeds: speedLimits};
             localStorage.WME_ContextMenu = JSON.stringify(contextMenuSettings);
@@ -1420,7 +1585,9 @@ SL.saveSpeedSignEdits = function(e) {
             contextMenuSettings.speedSigns[country].speeds = editedSpeedLimits;
             contextMenuSettings.speedSigns[country].signShape = document.querySelector('#cmMenuSLEdit select').value;
             contextMenuSettings.speedSigns[country].signBorderColor = document.querySelector('#cmMenuSLEdit input[name="signBorderColor"]').value;
-        } else { contextMenuSettings.speedhelper[country] = {speeds: editedSpeedLimits}; }
+        }
+        else
+            contextMenuSettings.speedhelper[country] = {speeds: editedSpeedLimits};
     }
 
     localStorage.WME_ContextMenu = JSON.stringify(contextMenuSettings);
@@ -1433,9 +1600,9 @@ SL.saveSpeedSignEdits = function(e) {
 
 SL.editSpeedSigns = function(evt) {
     evt.stopPropagation();
-    if (document.getElementById('cmMenuSLEdit') !== null) {
+    if (document.getElementById('cmMenuSLEdit') !== null)
         SL.closeSpeedSignsEditor();
-    } else {
+    else {
         try {
             document.getElementById('cmContextMenu').removeEventListener('mouseenter', addHotkeyListener, false);
             window.removeEventListener('keydown', menuShortcutKeys, true);
@@ -1521,14 +1688,15 @@ SL.reduceSpeedhelperOverhead = function () {
 };
 //===============================================================================
 SL.checkUnits = function(speedVal) {
-    speedVal = Number(speedVal);
-    if (SL.imperial.convertUnits === 1) {
-        return Math.round(speedVal * SL.imperial.mph2kph);
-    } else if (SL.imperial.convertUnits === 2) {
-        return Math.round(speedVal * SL.imperial.kph2mph);
-    } else {
+    if(speedVal === '')
         return speedVal;
-    }
+    speedVal = Number(speedVal);
+    if (SL.imperial.convertUnits === 1)
+        return Math.round(speedVal * SL.imperial.mph2kph);
+    else if (SL.imperial.convertUnits === 2)
+        return Math.round(speedVal * SL.imperial.kph2mph);
+    else
+        return speedVal;
 };
 
 SL.addSpeedSignAB = function(speedVal) {
@@ -1697,11 +1865,10 @@ SL.addListenersToSigns = function (forceBuildNewMenu) {
         cmSpeedSigns[ss].addEventListener('click', function (e) {
             e.preventDefault();
             var speedVal;
-            if (!this.classList.length || !this.classList.contains('cm-sl-verified')) {
+            if (!this.classList.length || !this.classList.contains('cm-sl-verified'))
                 speedVal = this.firstElementChild.innerHTML;
-            } else {
+            else
                 speedVal = 0;
-            }
 
             if (e.shiftKey) { //AB - fwd
                 requestAnimationFrame(function(){
@@ -1776,12 +1943,11 @@ SL.addListenersToSigns = function (forceBuildNewMenu) {
 };
 
 //--------------------------------------------------------------------------
-
-
 SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
 	cmlog([1,1], 'SL.populateSpeedMenu(contextMenuSettings, ' + nodeLabel + ')');
-    document.getElementById('cmMenuNoContent').style.display = 'none';
-    document.getElementById('cmMenuContent').style.display = 'block';
+    $('#cmMenuNoContent')[0].style.display = 'none';
+    $('#cmMenuContent')[0].style.display = 'block';
+
     if (SL.menuResetEvent === true) SL.checkCountry();
 
     var slCurrentElementStatus = [!!document.getElementById('fwdMaxSpeedUnverifiedCheckbox'),
@@ -1827,9 +1993,7 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
         	document.getElementById('cmMenuContent').innerHTML = SL.cmMenuContentHTML;
         	SL.menuResetEvent = false;
 
-        } else { //TODO: I think slNumElementsMatched !== 4 is redundant with slNumSavedElementsMatched
-        	/*(document.getElementsByName('fwdMaxSpeed').length && !document.getElementsByName('fwdMaxSpeed_cm').length) ||
- 			(document.getElementsByName('revMaxSpeed').length && !document.getElementsByName('revMaxSpeed_cm').length)) {*/
+        } else {
  			SL.menuResetEvent = true;
             try {
     	    	cmlog([4,1],'Replace - Overwrite with Source and Rebuild');
@@ -1841,9 +2005,9 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
 
                 signholderEl = document.querySelector('#cmSpeedLimit #signsholder');
 
-                if (SL.speedhelperIsPresent !== null && SL.signsContainerHTML !== null) {
+                if (SL.speedhelperIsPresent !== null && SL.signsContainerHTML !== null)
 	    	        document.getElementById('signsContainer').innerHTML = SL.signsContainerHTML;
-	    	    } else if (signholderEl !== null) {
+	    	    else if (signholderEl !== null) {
                     signholderEl.id = 'signsholder_cm';
 	    	        document.getElementById('signsContainer').appendChild(document.getElementById('signsholder_cm')); // Move the signs to its own container
 	    	        SL.reduceSpeedhelperOverhead();
@@ -1883,11 +2047,10 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
 
             for (nm = 0; nm < wazeSpeedInputLength; nm++) {
             	cmSpeedInputSelector_orig = '#cmSpeedLimit input[name="' + wazeSpeedInput[nm].name + '"]';
-            	cmSpeedInputSelector = '#cmSpeedLimit input[name="' + wazeSpeedInput[nm].name + '_cm' + '"]';
+            	cmSpeedInputSelector = '#cmSpeedLimit input[name="' + wazeSpeedInput[nm].name + '_cm"]';
 
-                if (SL.menuResetEvent) {
+                if (SL.menuResetEvent)
                 	document.querySelector(cmSpeedInputSelector_orig).setAttribute('name', wazeSpeedInput[nm].name + '_cm');
-                }
 
                 cmSpeedInput = document.querySelector(cmSpeedInputSelector);
                 cmSpeedInput.addEventListener('click', function (e) {
@@ -1944,9 +2107,10 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
 	            var clearSignFwd = document.createElement('span');
 	            clearSignFwd.className = 'fa fa-ban';
             	fwdSpeedEl.parentNode.insertBefore(clearSignFwd, fwdSpeedEl.parentNode.children[0]);
+                debugger;
             	clearSignFwd.addEventListener('click', function() {
                     requestAnimationFrame(function(){
-		                SL.addSpeedSignAB(0);
+		                SL.addSpeedSignAB('');
 		            });
 	            }, false);
             }
@@ -1960,7 +2124,7 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
             	revSpeedEl.parentNode.insertBefore(clearSignRev, revSpeedEl.parentNode.children[0]);
             	clearSignRev.addEventListener('click', function() {
                     requestAnimationFrame(function(){
-		                SL.addSpeedSignBA(0);
+		                SL.addSpeedSignBA('');
 		            });
 	            }, false);
 			}
@@ -2064,9 +2228,9 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
                 SL.menuResetEvent = false;
                 setTimeout(function(){SL.signsContainerHeight = $('#signsholder_cm').height();},200);
                 SL.addListenersToSigns(forceBuildNewMenu);
-            } else if (SL.speedhelperIsPresent !== false) {
+            } else if (SL.speedhelperIsPresent !== false)
                 setTimeout(waitForSpeedhelper, 30);
-            } else { // SL.speedhelperIsPresent === false
+            else { // SL.speedhelperIsPresent === false
                 SL.menuResetEvent = false;
                 SL.createSpeedSigns();
                 SL.addListenersToSigns(forceBuildNewMenu);
@@ -2166,9 +2330,8 @@ var selectedItemsIsSegment = function () {
         s, segments = [];
 
 	cmlog([1,1], 'selectedItemsIsSegment()');
-    for (s = 0; s < selLength; s++) {
+    for (s = 0; s < selLength; s++)
         if (sel[s].model.type === 'segment') segments.push(sel[s]);
-    }
 
     return (segments.length) ? {nodeLabel: false, segments: segments} : false;
 };
@@ -2179,11 +2342,10 @@ var selectionIsSegment = function (e) {
         numSelected, eventFeatures, evTarget, nodeLabel = false;
 
     // First check for segments under cursor (hover/mouseover)
-    if (e && e.target) {
+    if (e && e.target)
     	evTarget = $(e.target).get(0); //normalization by jQuery is necessary for FF compatibility
-    } else {
+    else
     	evTarget = false;
-    }
 
 	if 	(evTarget && evTarget._featureId &&
     	(evTarget._geometryClass === "OpenLayers.Geometry.LineString" ||
@@ -2194,24 +2356,19 @@ var selectionIsSegment = function (e) {
 		if (evTarget._geometryClass === "OpenLayers.Geometry.Point" && evTarget._style) {
             cmlog([1,3], evTarget._featureId, evTarget._geometryClass, evTarget._style.label);
 
-			if (evTarget._style.label === 'A') {
+			if (evTarget._style.label === 'A')
 				nodeLabel = 'A';
-			} else if (evTarget._style.label === 'B') {
+			else if (evTarget._style.label === 'B')
 				nodeLabel = 'B';
-			}
 		}
 
         sel = W.selectionManager.getSelectedFeatures(); //returns empty array if nothing
         selLength = sel.length;
-
         eventFeatures = W.map.segmentLayer.getFeatureById(evTarget._featureId); //segment layer -- returns null if nothing
-    	//cmlog([1,0], 'eventFeatures =')
-    	//console.debug(eventFeatures);
 
         if (eventFeatures && eventFeatures.model.type === 'segment') {
             segments[0] = eventFeatures; //return result from W.map.segmentLayer.getFeatureById(._featureId) is the same as individual objects within the array returned by W.selectionManager.selectedItems
             try {
-            	//cmlog([1,0],'SegID:',eventFeatures.model.attributes.id);
             	W.selectionManager.setSelectedModels([eventFeatures.model]); // [eventFeatures.model] is the same as the return result for one seg from W.model.segments.getByIds([id])
         	} catch(err) { cmlog([1,0], '<tantrum>'); console.error(err); }
         }
@@ -2219,20 +2376,17 @@ var selectionIsSegment = function (e) {
         //Now check for any selected segments... any duplicates of the hovered
         //segment will be dealt with in the next steps using object literals
         try {
-	        for (s = 0; s < selLength; s++) {
+	        for (s = 0; s < selLength; s++)
 	            if (sel[s].model.type === 'segment') segments.push(sel[s]);
-	        }
 	    } catch(err) {
 			if (e.type === 'selectionchanged') {
 		        sel = e.selected;
 		        selLength = sel.length;
 
-		        for (s = 0; s < selLength; s++) {
+		        for (s = 0; s < selLength; s++)
 		            if (sel[s] && sel[s].model.type === 'segment') segments.push(sel[s]);
-		        }
 		    }
 	    }
-        //console.info(segments);
 
         document.getElementById('cmMenuNoContent').style.display = 'none';
         document.getElementById('cmMenuContent').style.display = 'block';
@@ -2243,15 +2397,14 @@ var selectionIsSegment = function (e) {
         sel = e.selected;
         selLength = sel.length;
 
-        for (s = 0; s < selLength; s++) {
+        for (s = 0; s < selLength; s++)
             if (sel[s] && sel[s].model.type === 'segment') segments.push(sel[s]);
-        }
 
         return (segments.length) ? {nodeLabel: false, segments: segments} : false; //no segments near cursor
 
-    } else {
-        return false;
     }
+    else
+        return false;
 };
 
 //----------------------------------------------------------------------------------------------
@@ -2259,28 +2412,33 @@ var selectionIsSegment = function (e) {
 var setupSegmentContextMenu = function (e) {
 	cmlog([1,0],'------------------------------------------------------------');
     cmlog([1,1], 'setupSegmentContextMenu()');
-	if (document.getElementById('cmContextMenu') && document.getElementById('cmContextMenu').style.display !== 'none') {
+	if (document.getElementById('cmContextMenu') && $('#cmContextMenu')[0].style.display !== 'none') {
 		var selectedStuff = selectionIsSegment(e);
 
 	    if (selectedStuff) {
-	    	if (document.getElementById('cmRSel').value && document.getElementById('cmRSelAutoAdd'))
-	    	    document.getElementById('cmRSelAutoAdd').style.display = 'block';
-
+	    	if ($('#cmRSel')[0].value && document.getElementById('cmRSelAutoAdd'))
+	    	    $('#cmRSelAutoAdd')[0].style.display = 'block';
+            let segInfo;
 	        switch (contextMenuSettings.clipboard) {
+                case 3:
+                    segInfo = getSegmentProperties(selectedStuff);
+                    populateEditAttributes(segInfo, contextMenuSettings);
+                    window.removeEventListener('click', closeContextMenu, false);
+                    break;
 	            case 2:
 	                SL.populateSpeedMenu(contextMenuSettings, selectedStuff.nodeLabel);
 	                break;
 	            case 1:
 	            case 0:
-	                var segInfo = getSegmentProperties(selectedStuff);
+	                segInfo = getSegmentProperties(selectedStuff);
 	                populateCopyMenu(segInfo, contextMenuSettings);
 	                break;
 	        }
-	    } else if (document.getElementById('cmPinMenu').value) {
+	    } else if ($('#cmPinMenu')[0].value) {
 			if (document.getElementById('cmRSelAutoAdd'))
-			    document.getElementById('cmRSelAutoAdd').style.display = 'none';
-	        document.getElementById('cmMenuNoContent').style.display = 'block';
-	        document.getElementById('cmMenuContent').style.display = 'none';
+			    $('#cmRSelAutoAdd')[0].style.display = 'none';
+	        $('#cmMenuNoContent')[0].style.display = 'block';
+	        $('#cmMenuContent')[0].style.display = 'none';
 	        return false;
 	    } else {
 	    	cmlog([1,1],'No segment detected.');
@@ -2328,7 +2486,7 @@ var moveMenu = function (evt) {
 	    requestAnimationFrame( function() {
 		    document.getElementById('cmContextMenu').classList.add('cm-drag');
 		    document.getElementById('cmContextMenu').style.top = evt.clientY - cursorOffsetY + 'px';
-		    document.getElementById('cmContextMenu').style.left = evt.clientX - cursorOffsetX  + 'px';
+		    document.getElementById('cmContextMenu').style.left = evt.clientX - cursorOffsetX + 'px';
 		});
 	} catch (err) { console.error(err); }
 };
@@ -2472,32 +2630,49 @@ var showPopupPanel = function(updateVersion, updateText, forumURL) {
 var switchPanelTo = function(panelName) {
     switch (panelName) {
         case 'clipboard':
-            document.getElementById('cmClipboard').value = true;
-            document.getElementById('cmClipboard').classList.remove('toggle-off');
-            document.getElementById('cmRSel').value = false;
-            document.getElementById('cmRSel').classList.add('toggle-off');
-            document.getElementById('cmSpeed').value = false;
-            document.getElementById('cmSpeed').parentNode.style.opacity = 0.4;
-            document.getElementById('cmContextMenu').style.width = '210px';
+            $('#cmClipboard')[0].value = true;
+            $('#cmClipboard')[0].classList.remove('toggle-off');
+            $('#cmRSel')[0].value = false;
+            $('#cmRSel')[0].classList.add('toggle-off');
+            $('#cmEditAttributes')[0].classList.add('toggle-off');
+            $('#cmEditAttributes')[0].value = false;
+            $('#cmSpeed')[0].value = false;
+            $('#cmSpeed')[0].parentNode.style.opacity = 0.4;
+            $('#cmContextMenu')[0].style.width = '210px';
             break;
         case 'rsel':
-            document.getElementById('cmClipboard').value = false;
-            document.getElementById('cmClipboard').classList.add('toggle-off');
-            document.getElementById('cmRSel').value = true;
-            document.getElementById('cmRSel').classList.remove('toggle-off');
-            document.getElementById('cmSpeed').value = false;
-            document.getElementById('cmSpeed').parentNode.style.opacity = 0.4;
-            document.getElementById('cmContextMenu').style.width = '210px';
+            $('#cmClipboard')[0].value = false;
+            $('#cmClipboard')[0].classList.add('toggle-off');
+            $('#cmRSel')[0].value = true;
+            $('#cmRSel')[0].classList.remove('toggle-off');
+            $('#cmEditAttributes')[0].classList.add('toggle-off');
+            $('#cmEditAttributes')[0].value = false;
+            $('#cmSpeed')[0].value = false;
+            $('#cmSpeed')[0].parentNode.style.opacity = 0.4;
+            $('#cmContextMenu')[0].style.width = '210px';
             break;
         case 'speed':
-            document.getElementById('cmClipboard').value = false;
-            document.getElementById('cmClipboard').classList.add('toggle-off');
-            document.getElementById('cmRSel').value = false;
-            document.getElementById('cmRSel').classList.add('toggle-off');
-            document.getElementById('cmSpeed').value = true;
-            document.getElementById('cmSpeed').parentNode.style.opacity = 0.84;
-            document.getElementById('cmContextMenu').style.width = '220px';
+            $('#cmClipboard')[0].value = false;
+            $('#cmClipboard')[0].classList.add('toggle-off');
+            $('#cmRSel')[0].value = false;
+            $('#cmRSel')[0].classList.add('toggle-off');
+            $('#cmEditAttributes')[0].classList.add('toggle-off');
+            $('#cmEditAttributes')[0].value = false;
+            $('#cmSpeed')[0].value = true;
+            $('#cmSpeed')[0].parentNode.style.opacity = 0.84;
+            $('#cmContextMenu')[0].style.width = '220px';
             SL.signsContainerHeight = null;
+            break;
+        case 'editattributes':
+            $('#cmClipboard')[0].value = false;
+            $('#cmClipboard')[0].classList.add('toggle-off');
+            $('#cmRSel')[0].value = false;
+            $('#cmRSel')[0].classList.add('toggle-off');
+            $('#cmSpeed')[0].value = false;
+            $('#cmSpeed')[0].parentNode.style.opacity = 0.4;
+            $('#cmEditAttributes')[0].classList.remove('toggle-off');
+            $('#cmEditAttributes')[0].value = true;
+            $('#cmContextMenu')[0].style.width = '230px';
             break;
     }
 };
@@ -2517,6 +2692,11 @@ var showEmptyPanel = function(panelName) {
             break;
         case 'speed':
             document.getElementById('cmMenuHeaderTitle').innerHTML = 'Edit Speed Limits';
+            document.getElementById('cmMenuNoContent').style.display = 'block';
+            document.getElementById('cmMenuContent').style.display = 'none';
+            break;
+        case 'editattributes':
+            document.getElementById('cmMenuHeaderTitle').innerHTML = 'Edit Attributes';
             document.getElementById('cmMenuNoContent').style.display = 'block';
             document.getElementById('cmMenuContent').style.display = 'none';
             break;
@@ -2644,12 +2824,15 @@ var initContextMenu = function () {
           '<div style="position: relative; display: inline-block; height: 100%; border-right: 1px solid #6EA1B7;">' +
             '<i id="cmRSel" style="font-size: 14px;" value="false" class="fa fa-road cm-footer-icns toggle-off" title="Copy to WME Road Selector" data-toggle="tooltips"></i>' +
           '</div>' +
-          '<div style="position: relative; display: inline-block; width: 20px;  margin: 0; opacity: 0.84;">' +
+          '<div style="position: relative; display: inline-block; width: 20px;  margin: 0; opacity: 0.84;  border-right: 1px solid #6EA1B7;">' +
             '<span id="cmSpeed" style="height: 16px" value="false" title="Edit Speed Limits" class="fa fa-stack">' +
               '<i class="fa fa-circle cm-footer-icns" style="font-size: 15px; width: 15px; color: #EEE; line-height: 14px; position: absolute; left: 0; text-align: center;"></i>' +
               '<i class="fa fa-circle-o cm-footer-icns" style="font-size: 15px; width: 15px; font-weight: 500; color: crimson; line-height: 14px; position: absolute; left: 0; text-align: center;"></i>' +
               '<i class="fa cm-footer-icns" style="font-size: 8px; font-style: normal; width: 15px; color: black; line-height: 14px; position: absolute; left: 0; text-align: center;">S</i>' +
             '</span>' +
+          '</div>' +
+          '<div style="position: relative; display: inline-block; width: 20px;  margin: 0; opacity: 0.84;">' +
+            '<i id="cmEditAttributes" style="font-size: 14px;" value="false" class="fa fa-pencil cm-footer-icns toggle-off" title="Edit Segment Attributes" data-toggle="tooltips"></i>' +
           '</div>' +
         '</div>';
 
@@ -2663,6 +2846,7 @@ var initContextMenu = function () {
 
         if (contextMenuSettings.clipboard === 1) switchPanelTo('rsel');
         else if (contextMenuSettings.clipboard === 2) switchPanelTo('speed');
+        else if(contextMenuSettings.clipboard === 3) switchPanelTo('editattributes');
 
         if (contextMenuSettings.pin) {
             document.getElementById('cmPinMenu').value = true;
@@ -2676,12 +2860,11 @@ var initContextMenu = function () {
         //======================
         // VERSION CHECK
         //======================
-		if (!CMenuVersion.isUpToDate(minVersion)) {
+		if (!CMenuVersion.isUpToDate(minVersion))
 			document.getElementById('cmUpdateNote').classList.add('cm-unread');
-		}
 
 		var forumURL = 'https://www.waze.com/forum/viewtopic.php?f=819&t=178371';
-			updateNotes = 'Hello there! Your friendly right-click WME popup has been recently updated! Within the popup panel, you can now:' +
+		let	updateNotes = 'Hello there! Your friendly right-click WME popup has been recently updated! Within the popup panel, you can now:' +
 			'</div><div class="cm-panel-section"><ul>' +
 			'<li>Drag-and-drop speed limit signs to input box</li>' +
 			'<li>Right-click node A/B to edit speed limit starting from that direction</li>' +
@@ -2705,11 +2888,11 @@ var initContextMenu = function () {
 
                 var selectedStuff = selectedItemsIsSegment();
                 if (selectedStuff) {
-                    var segInfo = getSegmentProperties(selectedStuff);
+                    let segInfo = getSegmentProperties(selectedStuff);
                     populateCopyMenu(segInfo, contextMenuSettings);
-                } else {
-                    showEmptyPanel('clipboard');
                 }
+                else
+                    showEmptyPanel('clipboard');
                 hidePasteMenu(false);
             } catch (err) {
                 console.error(err);
@@ -2726,12 +2909,12 @@ var initContextMenu = function () {
 
                     var selectedStuff = selectedItemsIsSegment();
                     if (selectedStuff) {
-                        var segInfo = getSegmentProperties(selectedStuff);
+                        let segInfo = getSegmentProperties(selectedStuff);
                         if (document.getElementById('cmRSelAutoAdd')) document.getElementById('cmRSelAutoAdd').style.display = 'block';
                         populateCopyMenu(segInfo, contextMenuSettings);
-                    } else {
-                        showEmptyPanel('rsel');
                     }
+                    else
+                        showEmptyPanel('rsel');
                     hidePasteMenu(true);
                 }
             } catch (err) {
@@ -2752,9 +2935,30 @@ var initContextMenu = function () {
                     SL.populateSpeedMenu(contextMenuSettings);
                     window.removeEventListener('click', closeContextMenu, false);
                     document.getElementById('toolbar').removeEventListener('mouseenter', closeContextMenu, false);
-                } else {
-                    showEmptyPanel('speed');
                 }
+                else
+                    showEmptyPanel('speed');
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        document.getElementById('cmEditAttributes').onclick = function (e) {
+            try {
+                e.stopPropagation();
+                switchPanelTo('editattributes');
+                contextMenuSettings.clipboard = 3;
+                localStorage.WME_ContextMenu = JSON.stringify(contextMenuSettings);
+
+                var selectedStuff = selectedItemsIsSegment();
+                if (selectedStuff) {
+                    let segInfo = getSegmentProperties(selectedStuff);
+                    window.removeEventListener('click', closeContextMenu, false);
+                    document.getElementById('toolbar').removeEventListener('mouseenter', closeContextMenu, false);
+                    populateEditAttributes(segInfo, contextMenuSettings);
+                }
+                else
+                    showEmptyPanel('editattributes');
             } catch (err) {
                 console.error(err);
             }
@@ -2765,7 +2969,7 @@ var initContextMenu = function () {
             function (e) {
 				cmlog([1,0],'------------------------------------------------------------');
             	cmlog([1,1], 'contextmenu');
-            	//console.info(e);
+
                 var selectedStuff = selectionIsSegment(e),
                 	contextMenu = document.getElementById('cmContextMenu');
 
@@ -2782,6 +2986,7 @@ var initContextMenu = function () {
                         contextMenu.style.opacity = 1;
 
                         window.addEventListener('keydown', menuShortcutKeys, true);
+                        W.selectionManager.events.register("selectionchanged", null, handleSelectionChanged);
                         //console.info('WMECM:','Added initial global hotkey listener upon menu open');
                         if (document.getElementById('cmPinMenu').value) {
 		                    // use a more selective hotkey listener
@@ -2794,10 +2999,11 @@ var initContextMenu = function () {
                     } catch (err) { console.error(err); }
                 } else {
                 	// No segment detected... Decide whether to keep the menu open.
-                    if (document.getElementById('cmPinMenu').value) {
+                    if (document.getElementById('cmPinMenu').value)
                         return true;
-                    } else {
+                    else {
                         contextMenu.style.display = 'none';
+                        W.selectionManager.events.unregister("selectionchanged", null, handleSelectionChanged);
                         return false;
                     }
                 }
@@ -2889,31 +3095,25 @@ var initContextMenu = function () {
 
 var getSelectedSegmentCount = function(){
 	let count = _.countBy(W.selectionManager.getSelectedFeatures().map(function(e){return e.model.type}), _.identity).segment;
-	if( !count)
+	if(!count)
 		return 0;
 	else
 		return count;
 }
 
-var waitCount = 0,
-    maxWaitCount = 50;
+var waitCount = 0, maxWaitCount = 50;
 var waitForWaze = function () {
     try {
-        if (document.getElementById('cmContextMenu')) {
+        if (document.getElementById('cmContextMenu'))
             return true;
-        } else if (typeof(Waze) !== "undefined" && W.model && W.selectionManager &&
-            W.model.segments && W.model.cities &&
-            W.map && W.map.layers) {
-
-            //cmlog([1],'starting...');
+        else if (typeof(Waze) !== "undefined" && W.model && W.selectionManager &&
+                 W.model.segments && W.model.cities &&
+                 W.map && W.map.layers && W.loginManager.user)
             setTimeout(initContextMenu, 1000);
-            //console.info('WMECM:', 'Something may have went wrong... not sure.');
-        } else if (waitCount++ < maxWaitCount) {
-            //console.info('waiting...');
+        else if (waitCount++ < maxWaitCount)
             setTimeout(waitForWaze, 1000);
-        } else {
+        else
             console.error('WMECM:', 'Failed to start');
-        }
     } catch (err) {
         console.error('WMECM:', 'Whoa. Major fail. Please let TheLastTaterTot know about this...');
         console.error(err);
