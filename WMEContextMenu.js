@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            WME Context Menu
 // @namespace       https://greasyfork.org/users/30701-justins83-waze
-// @version         2018.09.17.01
+// @version         2018.09.20.01
 // @description     A right-click popup menu for editing segments. Currently integrates with WME Speedhelper and Road Selector to help make it even easier and faster to edit the map.
 // @author          TheLastTaterTot
 // @include         https://www.waze.com/editor*
@@ -17,7 +17,6 @@
 /* global W */
 /* global OL */
 /* ecmaVersion 2017 */
-/* global require */
 /* global _ */
 /* eslint curly: ["warn", "multi-or-nest"] */
 
@@ -96,6 +95,12 @@ var roadTypes = {
     focusOut = new Event('focusout', {'bubbles':true}),
     isFirefox = !!~navigator.userAgent.indexOf('irefox'),
     minVersion = '0.3.6';
+
+var ABOrig = {
+    Orig: null,
+    ANode: null,
+    BNode: null
+};
 
 try {
 	if (isFirefox && localStorage.WME_ContextMenuFF) {
@@ -188,9 +193,8 @@ var getUnique = function (objArray) {
     var isNotDuplicate = function (comparisonList, checkThisName) {
         var isNotDup = true;
         try {
-            for (var c = 0, cLength = comparisonList.length; c < cLength; c++) {
+            for (var c = 0, cLength = comparisonList.length; c < cLength; c++)
                 if (comparisonList[c] === checkThisName) isNotDup = false;
-            }
         } catch (err) {
             console.error(err);
         }
@@ -199,9 +203,8 @@ var getUnique = function (objArray) {
 
     try {
         var uniqObjs = [];
-        for (var r = objArray.length; r--;) {
+        for (var r = objArray.length; r--;)
             if (isNotDuplicate(uniqObjs, objArray[r])) uniqObjs.push(objArray[r]); // && objArray[r] !== ''
-        }
         return uniqObjs;
     } catch (err) {
         console.error(err);
@@ -710,6 +713,22 @@ var handleSelectionChanged = function(e){
         else
             setupSegmentContextMenu(e);
     }
+
+    $('#cm_ABCenter').css('display', W.selectionManager.getSelectedFeatures().length !== 1 ? 'none' : 'block');
+    setABOrigValues();
+}
+
+var setABOrigValues = function(){
+    if(W.selectionManager.getSelectedFeatures().length === 1){
+        ABOrig.orig = null;
+        ABOrig.ANode = W.selectionManager.getSelectedFeatures()[0].geometry.getVertices()[0];
+        ABOrig.BNode = W.selectionManager.getSelectedFeatures()[0].geometry.getVertices()[1];
+    }
+    else{
+        ABOrig.orig = null;
+        ABOrig.ANode = null;
+        ABOrig.BNode = null;
+    }
 }
 
 var closeContextMenu = function () {
@@ -851,8 +870,7 @@ var resetContextMenu = function (contextMenuSettings) {
         '</div>' +
         '<div name="id" class="cm-menu-section">' +
             '<dl><dd id="cm_ids">Segment IDs</dd></dl>' +
-    '</div></div>';
-
+    '</div></div>'
 
     for (var h in contextMenuSettings.hidden) {
         if (contextMenuSettings.hidden[h]) //hideMenuSection(null, h);
@@ -2107,7 +2125,6 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
 	            var clearSignFwd = document.createElement('span');
 	            clearSignFwd.className = 'fa fa-ban';
             	fwdSpeedEl.parentNode.insertBefore(clearSignFwd, fwdSpeedEl.parentNode.children[0]);
-                debugger;
             	clearSignFwd.addEventListener('click', function() {
                     requestAnimationFrame(function(){
 		                SL.addSpeedSignAB('');
@@ -2727,6 +2744,9 @@ var initContextMenu = function () {
         'div.cm-menu-header { padding: 0px; border: 0; height: 20px; }\n' +
         '.cm-menu-header dl { background-color: rgba(147, 196, 211, 0.92); padding: 0; border-top-right-radius: 4px; border-top-left-radius: 4px; }\n' +
         '.cm-menu-header dt { padding: 4px 11px; text-transform: uppercase; line-height: 1.3; background-color: rgba(111, 167, 185, 0.7); color: #D8E9EF; font-size: 10px; border-top-right-radius: 3px; border-top-left-radius: 3px; height: 22px; margin-top: 1px; box-shadow: 0px -1px 0px #9ACCDC; }\n' +
+        'div.cm_ABCenter { padding: 0px; border: 0; height: 38px; }\n' +
+        '.cm_ABCenter dl { background-color: rgba(147, 196, 211, 0.92); padding: 0; border-top-right-radius: 4px; border-top-left-radius: 4px; }\n' +
+        '.cm_ABCenter dt { padding: 4px 11px; text-transform: uppercase; line-height: 1.3; background-color: rgba(111, 167, 185, 0.7); color: #D8E9EF; font-size: 10px; border-top-right-radius: 3px; border-top-left-radius: 3px; margin-top: 1px; box-shadow: 0px -1px 0px #9ACCDC; }\n' +
         'div.cm-menu-section { z-index: 2; border-bottom: 1px solid #416B7C; padding: 2px 0px 3px; background-color: rgba(147, 196, 211, 0.92); }\n' +
         '.cm-menu-section dl { margin: 0; padding: 0; display: block; }\n' +
         '.cm-menu-section dt { font-size: 9px; padding: 0px 6px 0px 20px; margin-top: 2px; text-transform: uppercase; line-height: 1.2; }\n' +
@@ -2780,6 +2800,8 @@ var initContextMenu = function () {
         '.cm-sl-unverified.cm-one { box-shadow: 0px 0px 0px 1px lime, inset 0px 0px 0px 2px rgba(255, 235, 59, 1);  }\n' +
         '.cm-sl-unverified.cm-both { box-shadow: 0px 0px 0px 1px orange, inset 0px 0px 0px 2px rgba(255, 235, 59, 1); }\n' +
         '#signsholder_cm>#signsError { float: initial; width: 100%; height: initial; padding: 5px 5px 5px 45px !important; text-align: left; }\n';
+        menuCSS+=
+            '.cm-node { border-radius:50%; width:16px; height:16px; color:black; background:#fff; border:2px solid #00ece3; cursor:pointer; font-size:12px; user-select: none;}\n';
         contextMenuCSS.innerHTML = menuCSS;
         document.head.appendChild(contextMenuCSS);
 
@@ -2803,8 +2825,10 @@ var initContextMenu = function () {
         contextMenu.style.zIndex = '5000';
         contextMenu.style.display = 'none';
         contextMenu.style.opacity = 0;
+
         contextMenu.innerHTML = '<div id="cmContainer" style="z-index: 2; color: white; padding:0; margin:0; position: relative; width: 100%; display: block;"></div>' +
         	'<div id="cmUpdateNote" class="fa fa-exclamation-circle cm-update-note"></div>' +
+            '<div id="cm_ABCenter" class="cm_ABCenter" style="text-align:center;"><dl><dt>Jump To...</dt><dd style="padding-top:0px; margin-left:10px;"><span class="cm-node" id="cm_jumpA" style="float:left;">A</span><span id="cm_jumpReturn" style="display:inline-block; margin:0 auto; cursor:pointer; user-select:none;">Return</span><span class="cm-node" id="cm_jumpB" style="float:right; margin-right:10px;">B</span></dd></dl></div>' +
             '<div id="cmFooter" class="cm-bottom" style="color: #DDEDF3; height: 24px; background-color: rgba(75, 125, 148, 0.85); ' +
             'z-index: 3; padding: 1px 7px 1px; margin: 0; position: relative; width: 100%; display: block;"></div>';
 
@@ -2985,6 +3009,9 @@ var initContextMenu = function () {
                         setupSegmentContextMenu(e);
                         contextMenu.style.opacity = 1;
 
+                        setABOrigValues();
+                        $('#cm_ABCenter').css('display', W.selectionManager.getSelectedFeatures().length !== 1 ? 'none' : 'block');
+
                         window.addEventListener('keydown', menuShortcutKeys, true);
                         W.selectionManager.events.register("selectionchanged", null, handleSelectionChanged);
                         //console.info('WMECM:','Added initial global hotkey listener upon menu open');
@@ -3062,8 +3089,29 @@ var initContextMenu = function () {
             }
         }, false);
 
+        $('#cm_jumpA').click(function(){
+            if(ABOrig.Orig === null || (!compareCenterAndNode(W.map.getCenter(), ABOrig.ANode) && !compareCenterAndNode(W.map.getCenter(),ABOrig.BNode)))
+                ABOrig.Orig = W.map.getCenter().clone();
+            W.map.setCenter([ABOrig.ANode.x, ABOrig.ANode.y], W.map.zoom);
+        });
+
+        $('#cm_jumpB').click(function(){
+            if(ABOrig.Orig === null || (!compareCenterAndNode(W.map.getCenter(), ABOrig.ANode) && !compareCenterAndNode(W.map.getCenter(),ABOrig.BNode)))
+                ABOrig.Orig = W.map.getCenter().clone();
+            W.map.setCenter([ABOrig.BNode.x, ABOrig.BNode.y], W.map.zoom);
+        });
+
+        $('#cm_jumpReturn').click(function(){
+            if(ABOrig.Orig !== null)
+                W.map.setCenter([ABOrig.Orig.lon, ABOrig.Orig.lat], W.map.zoom);
+        });
+
     } catch (err) {
         console.error(err);
+    }
+
+    var compareCenterAndNode = function(center, node){
+        return (Math.abs(node.x - center.lon) < .000001 && Math.abs(node.y - center.lat) < .000001);
     }
 
     dragMenuSetup();
