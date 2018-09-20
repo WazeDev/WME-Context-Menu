@@ -88,7 +88,7 @@ var roadTypes = {
         18: "Railroad",
         19: "Runway/Taxiway",
         20: "Parking Lot Road"
-    },
+    };
     menuResetEvent_RSel = false,
     contextMenuSettings,
     changeEvent = new Event('change', { 'bubbles': true }),
