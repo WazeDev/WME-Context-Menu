@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            WME Context Menu
 // @namespace       https://greasyfork.org/users/30701-justins83-waze
-// @version         2018.09.20.01
+// @version         2018.11.06.01
 // @description     A right-click popup menu for editing segments. Currently integrates with WME Speedhelper and Road Selector to help make it even easier and faster to edit the map.
 // @author          TheLastTaterTot
 // @include         https://www.waze.com/editor*
@@ -722,7 +722,7 @@ var setABOrigValues = function(){
     if(W.selectionManager.getSelectedFeatures().length === 1){
         ABOrig.orig = null;
         ABOrig.ANode = W.selectionManager.getSelectedFeatures()[0].geometry.getVertices()[0];
-        ABOrig.BNode = W.selectionManager.getSelectedFeatures()[0].geometry.getVertices()[1];
+        ABOrig.BNode = W.selectionManager.getSelectedFeatures()[0].geometry.getVertices().slice(-1)[0];
     }
     else{
         ABOrig.orig = null;
