@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            WME Context Menu
 // @namespace       https://greasyfork.org/users/30701-justins83-waze
-// @version         2018.11.06.01
+// @version         2018.11.15.01
 // @description     A right-click popup menu for editing segments. Currently integrates with WME Speedhelper and Road Selector to help make it even easier and faster to edit the map.
 // @author          TheLastTaterTot
 // @include         https://www.waze.com/editor*
@@ -16,6 +16,8 @@
 /* global $ */
 /* global W */
 /* global OL */
+/* global require */
+/* global I18n */
 /* ecmaVersion 2017 */
 /* global _ */
 /* eslint curly: ["warn", "multi-or-nest"] */
@@ -101,6 +103,9 @@ var ABOrig = {
     ANode: null,
     BNode: null
 };
+
+var ANodeUturn = null;
+var BNodeUturn = null;
 
 try {
 	if (isFirefox && localStorage.WME_ContextMenuFF) {
@@ -214,20 +219,19 @@ var getUnique = function (objArray) {
 //----------------------------------------------------------------------
 var addPasteItems = function(attrName) {
     if (/primaryStreet|primaryCity/.test(attrName)) {
-        clipboard = document.getElementById('input_' + attrName);
+        let clipboard = document.getElementById('input_' + attrName);
         if (clipboard) {
-            pasteOption = document.createElement('dd');
+            let pasteOption = document.createElement('dd');
             pasteOption.className = 'cm-paste';
             pasteOption.innerHTML = clipboard.value;
             pasteOption.name = clipboard.value;
 
             $('#' + attrName + ' .cm-paste').remove();
 
-            if (document.querySelector('#' + attrName + '>dd')){
+            if (document.querySelector('#' + attrName + '>dd'))
                 document.getElementById(attrName).insertBefore(pasteOption, document.querySelector('#' + attrName + '>dd'));
-            } else {
+            else
                 document.getElementById(attrName).appendChild(pasteOption);
-            }
             pasteOption.addEventListener('click', function(e) { pasteTo(e, this.parentNode.id, this.name); }, false);
         }
     }
@@ -626,9 +630,8 @@ var getSegmentProperties = function (selectedStuff) {
             numKeys = s_toConnObjKeys.length;
             for (k = 0; k < numKeys; k++) {
                 try {
-                    if (s_toConnObjKeys[k] !== '') {
+                    if (s_toConnObjKeys[k] !== '')
                         s_ids.toCrossroads[s_toConnObjKeys[k]] = segments[s].model.attributes.toCrossroads[s_toConnObjKeys[k]];
-                    }
                 } catch(err) {}
             }
         }
@@ -715,7 +718,92 @@ var handleSelectionChanged = function(e){
     }
 
     $('#cm_ABCenter').css('display', W.selectionManager.getSelectedFeatures().length !== 1 ? 'none' : 'block');
+    $('#cm_UTurn').css('display', W.selectionManager.getSelectedFeatures().length !== 1 ? 'none' : 'block');
     setABOrigValues();
+    setUTurnStatus();
+}
+
+var setUTurnStatus = function(){
+    ANodeUturn = null;
+    BNodeUturn = null;
+    $('#cm_UTurnA').css('visibility', 'visible');
+    $('#cm_UTurnB').css('visibility', 'visible');
+    $('#cm_UTurnBoth').css('visibility', 'visible');
+
+    if(W.selectionManager.getSelectedFeatures().length === 1 && W.selectionManager.getSelectedFeatures()[0].model.type === "segment"){
+        function validate(seg) {
+            if (seg.model.getLockRank() > W.loginManager.user.rank) return false;
+            if (!seg.model.arePropertiesEditable()) return false;
+            if (seg.model.isDeleted()) return false;
+
+            return true;
+        }
+        var seg = W.selectionManager.getSelectedFeatures()[0];
+        var turnGraph = W.model.getTurnGraph();
+
+        if (validate(seg)) {
+            var toNode = null;
+            var fromNode = null;
+
+            if (seg.model.attributes.toNodeID)
+                toNode = seg.model.getToNode();
+            if (seg.model.attributes.fromNodeID)
+                fromNode = seg.model.getFromNode();
+
+            if (toNode !== null && toNode.state === null && toNode.attributes.segIDs.length > 1) {
+                var turnToNode = turnGraph.getTurnThroughNode(toNode, seg.model, seg.model);
+                var toTurnData = turnToNode.getTurnData();
+
+                BNodeUturn = toTurnData.isAllowed();
+            }
+
+            if (fromNode !== null && fromNode.state === null && fromNode.attributes.segIDs.length > 1) {
+                var turnFromNode = turnGraph.getTurnThroughNode(fromNode, seg.model, seg.model);
+                var fromTurnData = turnFromNode.getTurnData();
+
+                ANodeUturn = fromTurnData.isAllowed();
+            }
+        }
+    }
+
+    if(ANodeUturn === null){
+        $('#cm_UTurnA').css('visibility', 'hidden');
+        $('#cm_UTurnBoth').css('visibility', 'hidden');
+    }
+    else{
+        $('#cm_UTurnA')[0].disabled = false;
+        if(ANodeUturn){
+            $('#cm_UTurnAIcon').removeClass('closed');
+            $('#cm_UTurnAIcon').addClass('open');
+        }
+        else{
+            $('#cm_UTurnAIcon').removeClass('open');
+            $('#cm_UTurnAIcon').addClass('closed');
+        }
+    }
+    if(BNodeUturn === null){
+        $('#cm_UTurnB').css('visibility', 'hidden');
+        $('#cm_UTurnBoth').css('visibility', 'hidden');
+    }
+    else{
+        $('#cm_UTurnB')[0].disabled = false;
+        if(BNodeUturn){
+            $('#cm_UTurnBIcon').removeClass('closed');
+            $('#cm_UTurnBIcon').addClass('open');
+        }
+        else{
+            $('#cm_UTurnBIcon').removeClass('open');
+            $('#cm_UTurnBIcon').addClass('closed');
+        }
+    }
+    if(BNodeUturn && ANodeUturn){
+        $('#cm_UTurnBothIcon').removeClass('closed');
+        $('#cm_UTurnBothIcon').addClass('open');
+    }
+    else{
+        $('#cm_UTurnBothIcon').removeClass('open');
+        $('#cm_UTurnBothIcon').addClass('closed');
+    }
 }
 
 var setABOrigValues = function(){
@@ -1083,7 +1171,7 @@ var populateCopyMenu = function (segInfo, contextMenuSettings) {
         var updateNames = Object.keys(segInfo.ids),
             numNames = updateNames.length,
             n, selOption, emptyArr, s_names = {},
-            s_ids = {}, clipboard, pasteOption, sectionElement;
+            s_ids = {}, sectionElement;
 
         for (n = numNames; n--;) {
             sectionElement = document.getElementById('cm_' + updateNames[n]);
@@ -1332,9 +1420,8 @@ SL.checkCountry = function () {
 
     var matchCount = 0;
     for (var c = 0; c < currentNumCountries; c++) {
-        for (var s = 0; s < savedNumCountries; s++) {
+        for (var s = 0; s < savedNumCountries; s++)
             if (currentCountries[c] === contextMenuSettings.countries[s]) matchCount++;
-        }
     }
 
     for (var ic = 0, icLength = SL.imperial.mphCountries.length; ic < icLength; ic++) {
@@ -1344,8 +1431,8 @@ SL.checkCountry = function () {
         }
     }
 
-    if (isImperialCountry  && !W.prefs.attributes.isImperial) convertUnits = 1; //convert metric --> imperial
-    else if (!isImperialCountry  && W.prefs.attributes.isImperial) convertUnits = 2; //convert imperial --> metric
+    if (isImperialCountry && !W.prefs.attributes.isImperial) convertUnits = 1; //convert metric --> imperial
+    else if (!isImperialCountry && W.prefs.attributes.isImperial) convertUnits = 2; //convert imperial --> metric
 
     SL.imperial.useMPH = isImperialCountry;
     SL.imperial.convertUnits = convertUnits;
@@ -1356,9 +1443,8 @@ SL.checkCountry = function () {
         localStorage.WME_ContextMenu = JSON.stringify(contextMenuSettings);
         SL.forceBuildNewMenu = true;
         return true; //saved for later for implementing a check without having to refresh browser
-    } else {
+    } else
         return false;
-    }
 };
 
 SL.highlightSpeedSigns = function () {
@@ -1380,13 +1466,12 @@ SL.highlightSpeedSigns = function () {
 	if (fwdSL !== null) fwdSpeedVal = fwdSL.valueAsNumber;
 	if (revSL !== null) revSpeedVal = revSL.valueAsNumber;
 
-    if ((fwdSpeedVal+revSpeedVal) === 0) {
+    if ((fwdSpeedVal+revSpeedVal) === 0)
     	return;
-    } else if ((revSLMenu && revSLMenu.parentNode.style.display === 'none') || revSpeedVal===0) {
+    else if ((revSLMenu && revSLMenu.parentNode.style.display === 'none') || revSpeedVal===0)
 		revSpeedVal = false;
-	} else if ((fwdSLMenu && fwdSLMenu.parentNode.style.display === 'none') || fwdSpeedVal===0) {
+	else if ((fwdSLMenu && fwdSLMenu.parentNode.style.display === 'none') || fwdSpeedVal===0)
 		fwdSpeedVal = false;
-	}
 
     if (SL.imperial.convertUnits === 1) {
         if (fwdSpeedVal) fwdSpeedVal = Math.round(fwdSpeedVal * SL.imperial.kph2mph);
@@ -1504,11 +1589,10 @@ SL.createSpeedSigns = function() {
         } else {
             speedSignSettings = contextMenuSettings.speedSigns.default;
             speedLimits = speedSignSettings.speeds;
-            if (SL.imperial.useMPH) {
+            if (SL.imperial.useMPH)
                 speedLimits = speedLimits.slice(0,15);
-            } else {
+            else
                 speedLimits = speedLimits.filter((a,i) => (Number.isInteger(a/10)) ? i : false);
-            }
             contextMenuSettings.speedSigns[country] = { speeds: speedLimits,
                                                         signShape: speedSignSettings.signShape,
                                                         signBorderColor: speedSignSettings.signBorderColor};
@@ -1551,9 +1635,8 @@ SL.createSpeedSigns = function() {
         }
     }
 
-    for (var sl=0, slLength = speedLimits.length; sl < slLength; sl++) {
+    for (var sl=0, slLength = speedLimits.length; sl < slLength; sl++)
         signsHTML += '<div id="sign' + speedLimits[sl] + '"><div>' + speedLimits[sl] + '</div></div>';
-    }
 
     signsHolderEl.innerHTML = signsHTML;
     SL.signsContainerHTML = document.getElementById('signsContainer').innerHTML;
@@ -1810,11 +1893,11 @@ SL.addSpeedSignBoth = function(speedVal) {
 		pauseTime = (numSegsSelected > 10) ? 60 : 0;
 
 	cmlog([5,3],speedVal);
-	if ((revSLMenu && revSLMenu.parentNode.style.display === 'none') || revSLMenu === null) {
+	if ((revSLMenu && revSLMenu.parentNode.style.display === 'none') || revSLMenu === null)
 		SL.addSpeedSignAB(speedVal);
-	} else if ((fwdSLMenu && fwdSLMenu.parentNode.style.display === 'none') || fwdSLMenu === null) {
+	else if ((fwdSLMenu && fwdSLMenu.parentNode.style.display === 'none') || fwdSLMenu === null)
 		SL.addSpeedSignBA(speedVal);
-	} else if (fwdSL.disabled === false && revSL.disabled === false) {
+	else if (fwdSL.disabled === false && revSL.disabled === false) {
     	document.getElementById('cmWaitCover').style.display = 'block';
         speedVal = SL.checkUnits(speedVal);
 		prevFwdSpeedVal = fwdSLMenu.value;
@@ -1942,9 +2025,8 @@ SL.addListenersToSigns = function (forceBuildNewMenu) {
             document.getElementsByName('fwdMaxSpeed_cm').length+1,
             document.getElementsByName('revMaxSpeed_cm').length+1];
 
-    for (var cc = 4, slCurrentElementTotal=0; cc--;) {
+    for (var cc = 4, slCurrentElementTotal=0; cc--;)
         slCurrentElementTotal += slCurrentElementStatus[cc];
-    }
 
     if (forceBuildNewMenu === null || SL.speedhelperIsPresent === null) {
         /*SL.signsContainerHTML = null;*/
@@ -2016,7 +2098,7 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
             try {
     	    	cmlog([4,1],'Replace - Overwrite with Source and Rebuild');
     	    	document.getElementById('cmMenuContent').innerHTML = document.querySelector('#segment-edit-general div.speed-limit').outerHTML;
-    	    	speedLimit = document.getElementById('cmMenuContent').children[0];
+    	    	let speedLimit = document.getElementById('cmMenuContent').children[0];
                 speedLimit.innerHTML = '<div id="signsContainer" style="min-height: ' + ((SL.signsContainerHeight) ? (SL.signsContainerHeight + 'px; ') : 'auto; ') + 'margin-bottom: 10px; opacity: 0.9;"></div><div class="form-inline">' + speedLimit.innerHTML + '</div>';
                 speedLimit.id = 'cmSpeedLimit';
                 speedLimit.className = 'cm-speed-limit cm-menu-section';
@@ -2046,7 +2128,7 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
             // Add event listeners for verified SL checkbox in menu
             for (var cb = 0; cb < wazeVerifyChkBoxLabel.length; cb++) {
                 wazeChkbox = wazeVerifyChkBoxLabel[cb].parentNode.children[0];
-                cmChkboxSelector = '#cmSpeedLimit ' + '#' + wazeChkbox.id;
+                let cmChkboxSelector = '#cmSpeedLimit ' + '#' + wazeChkbox.id;
 
                 if (SL.menuResetEvent) document.querySelector(cmChkboxSelector).id = wazeChkbox.id + '_cm';
 
@@ -2119,7 +2201,7 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
         //--------------------------------------------------------------------------
 
         // Add event listener for clearing SLs of each direction
-        var fwdSpeedEl = document.querySelector('input[name="fwdMaxSpeed_cm"]');
+        let fwdSpeedEl = document.querySelector('input[name="fwdMaxSpeed_cm"]');
         if (fwdSpeedEl) {
         	if (fwdSpeedEl.parentNode.querySelector('.fa-ban') === null) {
 	            var clearSignFwd = document.createElement('span');
@@ -2133,7 +2215,7 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
             }
         }
 
-       	var revSpeedEl = document.querySelector('input[name="revMaxSpeed_cm"]');
+       	let revSpeedEl = document.querySelector('input[name="revMaxSpeed_cm"]');
         if (revSpeedEl) {
         	if (revSpeedEl.parentNode.querySelector('.fa-ban') === null) {
 	            var clearSignRev = document.createElement('span');
@@ -2160,7 +2242,7 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
         }
 
         // Add event listeners for drag-drop events
-        var fwdSpeedEl = document.querySelector('input[name="fwdMaxSpeed_cm"]');
+        fwdSpeedEl = document.querySelector('input[name="fwdMaxSpeed_cm"]');
         if (fwdSpeedEl) {
             // Allow drop event
             fwdSpeedEl.addEventListener('dragover', function(ev) {
@@ -2182,7 +2264,7 @@ SL.populateSpeedMenu = function (contextMenuSettings, nodeLabel) {
             }, false);
         }
 
-        var revSpeedEl = document.querySelector('input[name="revMaxSpeed_cm"]');
+        revSpeedEl = document.querySelector('input[name="revMaxSpeed_cm"]');
         if (revSpeedEl) {
             // Allow drop event
             revSpeedEl.addEventListener('dragover', function(ev) {
@@ -2461,9 +2543,8 @@ var setupSegmentContextMenu = function (e) {
 	    	cmlog([1,1],'No segment detected.');
 	        return false;
 	    }
-	} else {
+	} else
 		return false;
-	}
 };
 
 //=======================================================================================
@@ -2570,10 +2651,8 @@ var dragMenuSetup = function(pinState) {
     } else if (!pinState && contextMenu.draggable === true) {
         contextMenu.draggable = false;
     	contextMenu.removeEventListener('dragstart', allowMenuDrag);
-        if (!isFirefox) {
+        if (!isFirefox)
 	        mapDiv.removeEventListener('drop', placeMenu);
-	    }
-
     }
 };
 
@@ -2747,6 +2826,9 @@ var initContextMenu = function () {
         'div.cm_ABCenter { padding: 0px; border: 0; height: 38px; }\n' +
         '.cm_ABCenter dl { background-color: rgba(147, 196, 211, 0.92); padding: 0; border-top-right-radius: 4px; border-top-left-radius: 4px; }\n' +
         '.cm_ABCenter dt { padding: 4px 11px; text-transform: uppercase; line-height: 1.3; background-color: rgba(111, 167, 185, 0.7); color: #D8E9EF; font-size: 10px; border-top-right-radius: 3px; border-top-left-radius: 3px; margin-top: 1px; box-shadow: 0px -1px 0px #9ACCDC; }\n' +
+        'div.cm_UTurn { padding: 0px; border: 0; height: 38px; }\n' +
+        '.cm_UTurn dl { background-color: rgba(147, 196, 211, 0.92); padding: 0; border-top-right-radius: 4px; border-top-left-radius: 4px; }\n' +
+        '.cm_UTurn dt { padding: 4px 11px; text-transform: uppercase; line-height: 1.3; background-color: rgba(111, 167, 185, 0.7); color: #D8E9EF; font-size: 10px; border-top-right-radius: 3px; border-top-left-radius: 3px; margin-top: 1px; box-shadow: 0px -1px 0px #9ACCDC; }\n' +
         'div.cm-menu-section { z-index: 2; border-bottom: 1px solid #416B7C; padding: 2px 0px 3px; background-color: rgba(147, 196, 211, 0.92); }\n' +
         '.cm-menu-section dl { margin: 0; padding: 0; display: block; }\n' +
         '.cm-menu-section dt { font-size: 9px; padding: 0px 6px 0px 20px; margin-top: 2px; text-transform: uppercase; line-height: 1.2; }\n' +
@@ -2801,7 +2883,12 @@ var initContextMenu = function () {
         '.cm-sl-unverified.cm-both { box-shadow: 0px 0px 0px 1px orange, inset 0px 0px 0px 2px rgba(255, 235, 59, 1); }\n' +
         '#signsholder_cm>#signsError { float: initial; width: 100%; height: initial; padding: 5px 5px 5px 45px !important; text-align: left; }\n';
         menuCSS+=
-            '.cm-node { border-radius:50%; width:16px; height:16px; color:black; background:#fff; border:2px solid #00ece3; cursor:pointer; font-size:12px; user-select: none;}\n';
+            '.cm-node { border-radius:50%; width:16px; height:16px; color:black; background:#fff; border:2px solid #00ece3; cursor:pointer; font-size:12px; user-select: none;}\n' +
+            '.cm_UTurn .arrow.uturn.open { background-image: url(//editor-assets.waze.com/production/img/turns96765f551688fd5082b619129499bbb3.png); background-position: -22px -96px; width: 16px; height: 16px; transform: scale(0.74); }\n' +
+            '.cm_UTurn .arrow.uturn.open:hover, .cm_UTurn .arrow.uturn.open.hover { background-image: url(//editor-assets.waze.com/production/img/turns96765f551688fd5082b619129499bbb3.png); background-position: -66px -74px; width: 16px; height: 16px; transform: scale(0.74); }\n' +
+            '.cm_UTurn .arrow.uturn.closed { cursor:pointer; background-image: url(//editor-assets.waze.com/production/img/turns96765f551688fd5082b619129499bbb3.png); background-position: -22px -74px; width: 16px; height: 16px; transform: scale(0.74); }\n' +
+            '.cm_UTurn .arrow.uturn.closed:hover, .cm_UTurn .arrow.uturn.closed.hover { cursor:pointer; background-image: url(//editor-assets.waze.com/production/img/turns96765f551688fd5082b619129499bbb3.png); background-position: -66px -96px; width: 16px; height: 16px; transform: scale(0.74); }\n';
+
         contextMenuCSS.innerHTML = menuCSS;
         document.head.appendChild(contextMenuCSS);
 
@@ -2829,6 +2916,7 @@ var initContextMenu = function () {
         contextMenu.innerHTML = '<div id="cmContainer" style="z-index: 2; color: white; padding:0; margin:0; position: relative; width: 100%; display: block;"></div>' +
         	'<div id="cmUpdateNote" class="fa fa-exclamation-circle cm-update-note"></div>' +
             '<div id="cm_ABCenter" class="cm_ABCenter" style="text-align:center;"><dl><dt>Jump To...</dt><dd style="padding-top:0px; margin-left:10px;"><span class="cm-node" id="cm_jumpA" style="float:left;">A</span><span id="cm_jumpReturn" style="display:inline-block; margin:0 auto; cursor:pointer; user-select:none;">Return</span><span class="cm-node" id="cm_jumpB" style="float:right; margin-right:10px;">B</span></dd></dl></div>' +
+            '<div id="cm_UTurn" class="cm_UTurn" style="text-align:center;"><dl><dt>U-Turns</dt><dd style="padding-top:0px; margin-left:10px;"><span id="cm_UTurnA" style="cursor: pointer;"><span class="cm-node"style="float:left;">A</span><span id="cm_UTurnAIcon" class="arrow uturn closed" style="display:inline-block; float:left;"></span></span><span id="cm_UTurnBoth" style="cursor:pointer;"><span style="display:inline-block; margin:0 auto; user-select:none;">Both</span><span id="cm_UTurnBothIcon" class="arrow uturn closed" style="display:inline-block;"></span></span><span id="cm_UTurnB" style="cursor:pointer;"><span class="cm-node" style="float:right; margin-right:10px;">B</span><span id="cm_UTurnBIcon" class="arrow uturn closed" style="display:inline-block; float:right;"></span></span></dd></dl></div>' +
             '<div id="cmFooter" class="cm-bottom" style="color: #DDEDF3; height: 24px; background-color: rgba(75, 125, 148, 0.85); ' +
             'z-index: 3; padding: 1px 7px 1px; margin: 0; position: relative; width: 100%; display: block;"></div>';
 
@@ -3010,7 +3098,9 @@ var initContextMenu = function () {
                         contextMenu.style.opacity = 1;
 
                         setABOrigValues();
+                        setUTurnStatus();
                         $('#cm_ABCenter').css('display', W.selectionManager.getSelectedFeatures().length !== 1 ? 'none' : 'block');
+                        $('#cm_UTurn').css('display', W.selectionManager.getSelectedFeatures().length !== 1 ? 'none' : 'block');
 
                         window.addEventListener('keydown', menuShortcutKeys, true);
                         W.selectionManager.events.register("selectionchanged", null, handleSelectionChanged);
@@ -3104,6 +3194,64 @@ var initContextMenu = function () {
         $('#cm_jumpReturn').click(function(){
             if(ABOrig.Orig !== null)
                 W.map.setCenter([ABOrig.Orig.lon, ABOrig.Orig.lat], W.map.zoom);
+        });
+
+        $('#cm_UTurnA').click(function(){
+            let SetTurn = require("Waze/Model/Graph/Actions/SetTurn");
+            let seg = W.selectionManager.getSelectedFeatures()[0];
+            let turnGraph = W.model.getTurnGraph();
+            let fromNode = seg.model.getFromNode();
+            let turnFromNode = turnGraph.getTurnThroughNode(fromNode, seg.model, seg.model);
+            let fromTurnData = turnFromNode.getTurnData();
+            fromTurnData = fromTurnData.withToggledState(!ANodeUturn);
+            turnFromNode = turnFromNode.withTurnData(fromTurnData);
+
+            let lf = new SetTurn(turnGraph, turnFromNode);
+            W.model.actionManager.add(lf);
+            setUTurnStatus();
+        });
+
+        $('#cm_UTurnB').click(function(){
+            let SetTurn = require("Waze/Model/Graph/Actions/SetTurn");
+            let seg = W.selectionManager.getSelectedFeatures()[0];
+            let turnGraph = W.model.getTurnGraph();
+            let toNode = seg.model.getToNode();
+            let turnToNode = turnGraph.getTurnThroughNode(toNode, seg.model, seg.model);
+            let toTurnData = turnToNode.getTurnData();
+            toTurnData = toTurnData.withToggledState(!BNodeUturn);
+            turnToNode = turnToNode.withTurnData(toTurnData);
+
+            let lt = new SetTurn(turnGraph, turnToNode);
+            W.model.actionManager.add(lt);
+            setUTurnStatus();
+        });
+
+        $('#cm_UTurnBoth').click(function(){
+            let SetTurn = require("Waze/Model/Graph/Actions/SetTurn");
+            let seg = W.selectionManager.getSelectedFeatures()[0];
+            let turnGraph = W.model.getTurnGraph();
+
+            let enabled = $('#cm_UTurnBothIcon').hasClass('open');
+            //B node
+            let toNode = seg.model.getToNode();
+            let turnToNode = turnGraph.getTurnThroughNode(toNode, seg.model, seg.model);
+            let toTurnData = turnToNode.getTurnData();
+            toTurnData = toTurnData.withToggledState(!enabled);
+            turnToNode = turnToNode.withTurnData(toTurnData);
+
+            let lt = new SetTurn(turnGraph, turnToNode);
+            W.model.actionManager.add(lt);
+
+            //A node
+            let fromNode = seg.model.getFromNode();
+            let turnFromNode = turnGraph.getTurnThroughNode(fromNode, seg.model, seg.model);
+            let fromTurnData = turnFromNode.getTurnData();
+            fromTurnData = fromTurnData.withToggledState(!enabled);
+            turnFromNode = turnFromNode.withTurnData(fromTurnData);
+
+            let lf = new SetTurn(turnGraph, turnFromNode);
+            W.model.actionManager.add(lf);
+            setUTurnStatus();
         });
 
     } catch (err) {
