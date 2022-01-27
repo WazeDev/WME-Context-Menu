@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            WME Context Menu
 // @namespace       https://greasyfork.org/users/30701-justins83-waze
-// @version         2018.11.29.01
+// @version         2022.01.27.01
 // @description     A right-click popup menu for editing segments. Currently integrates with WME Speedhelper and Road Selector to help make it even easier and faster to edit the map.
 // @author          TheLastTaterTot
 // @include         https://www.waze.com/editor*
@@ -808,12 +808,14 @@ var setUTurnStatus = function(){
 
 var setABOrigValues = function(){
     if(W.selectionManager.getSelectedFeatures().length === 1){
-        ABOrig.orig = null;
-        ABOrig.ANode = W.selectionManager.getSelectedFeatures()[0].geometry.getVertices()[0];
-        ABOrig.BNode = W.selectionManager.getSelectedFeatures()[0].geometry.getVertices().slice(-1)[0];
+        ABOrig.Orig = null;
+        ABOrig.ANode = {};
+        ({x: ABOrig.ANode.lon, y : ABOrig.ANode.lat} = W.selectionManager.getSelectedFeatures()[0].geometry.getVertices()[0]);
+        ABOrig.BNode = {};
+        ({x: ABOrig.BNode.lon, y : ABOrig.BNode.lat} = W.selectionManager.getSelectedFeatures()[0].geometry.getVertices().slice(-1)[0]);
     }
     else{
-        ABOrig.orig = null;
+        ABOrig.Orig = null;
         ABOrig.ANode = null;
         ABOrig.BNode = null;
     }
@@ -3180,20 +3182,21 @@ var initContextMenu = function () {
         }, false);
 
         $('#cm_jumpA').click(function(){
+            debugger;
             if(ABOrig.Orig === null || (!compareCenterAndNode(W.map.getCenter(), ABOrig.ANode) && !compareCenterAndNode(W.map.getCenter(),ABOrig.BNode)))
                 ABOrig.Orig = W.map.getCenter().clone();
-            W.map.setCenter([ABOrig.ANode.x, ABOrig.ANode.y], W.map.zoom);
+            W.map.setCenter(ABOrig.ANode, W.map.zoom);
         });
 
         $('#cm_jumpB').click(function(){
             if(ABOrig.Orig === null || (!compareCenterAndNode(W.map.getCenter(), ABOrig.ANode) && !compareCenterAndNode(W.map.getCenter(),ABOrig.BNode)))
                 ABOrig.Orig = W.map.getCenter().clone();
-            W.map.setCenter([ABOrig.BNode.x, ABOrig.BNode.y], W.map.zoom);
+            W.map.setCenter(ABOrig.BNode, W.map.zoom);
         });
 
         $('#cm_jumpReturn').click(function(){
             if(ABOrig.Orig !== null)
-                W.map.setCenter([ABOrig.Orig.lon, ABOrig.Orig.lat], W.map.zoom);
+                W.map.setCenter(ABOrig.Orig, W.map.zoom);
         });
 
         $('#cm_UTurnA').click(function(){
@@ -3259,7 +3262,7 @@ var initContextMenu = function () {
     }
 
     var compareCenterAndNode = function(center, node){
-        return (Math.abs(node.x - center.lon) < .000001 && Math.abs(node.y - center.lat) < .000001);
+        return (Math.abs(node.lon - center.lon) < .000001 && Math.abs(node.lat - center.lat) < .000001);
     }
 
     dragMenuSetup();
